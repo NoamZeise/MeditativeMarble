@@ -16,6 +16,10 @@ add_custom_command(TARGET bmjam POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
         "${CMAKE_CURRENT_SOURCE_DIR}/../Graphics-Environment/resources"
         $<TARGET_FILE_DIR:bmjam>)
+add_custom_command(TARGET bmjam POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_directory
+        "${CMAKE_CURRENT_SOURCE_DIR}/../resources"
+        $<TARGET_FILE_DIR:bmjam>)
 
 if(NOT NO_ASSIMP)
   if(NOT BUILD_ASSIMP_STATIC)	
