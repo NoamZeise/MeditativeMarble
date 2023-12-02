@@ -23,7 +23,7 @@ int main() {
     manager.render->LoadResourcesToGPU(pool);
     manager.render->UseLoadedResources();
 
-    glm::vec3 camPos(5, 0, 0);
+    glm::vec3 camPos(5, 5, 0);
     glm::vec3 target(0);
     glm::vec3 up(0, 0, 1);
     
@@ -33,19 +33,54 @@ int main() {
 	if(manager.input.kb.press(GLFW_KEY_ESCAPE))
 	    glfwSetWindowShouldClose(manager.window, GLFW_TRUE);
 
+	glm::vec3 camForward = glm::normalize(camPos - target);
+	glm::vec3 camLeft = glm::normalize(glm::cross(up, camForward));
+	glm::vec3 camUp = glm::normalize(glm::cross(camForward, camLeft));
+	glm::mat4 camView(1.0f);
+	camView[0][0] = camLeft.x;
+	camView[1][0] = camLeft.y;
+	camView[2][0] = camLeft.z;
+	camView[3][0] = -glm::dot(camLeft, camPos);
+	camView[0][1] = camUp.x;
+	camView[1][1] = camUp.y;
+	camView[2][1] = camUp.z;
+	camView[3][1] = -glm::dot(camUp, camPos);
+	camView[0][2] = camForward.x;
+	camView[1][2] = camForward.y;
+	camView[2][2] = camForward.z;
+	camView[3][2] = -glm::dot(camForward, camPos);
+
 	if(manager.input.kb.hold(GLFW_KEY_UP)) {
-	    auto r = glm::quat(glm::vec3(0, 0.001 * manager.timer.dt(), 0));
+	    float size = -0.001 * manager.timer.dt();
+	    auto r = glm::quat(cos(size/2), (float)sin(size/2)*camLeft);
+	    r = glm::normalize(r);
 	    auto c = glm::conjugate(r);
 	    camPos = r * camPos * c;
 	}
 	if(manager.input.kb.hold(GLFW_KEY_DOWN)) {
-	    auto r = glm::quat(glm::vec3(0, -0.001 * manager.timer.dt(), 0));
+	    float size = 0.001 * manager.timer.dt();
+	    auto r = glm::quat(cos(size/2), (float)sin(size/2)*camLeft);
+	    r = glm::normalize(r);
+	    auto c = glm::conjugate(r);
+	    camPos = r * camPos * c;
+	}
+	if(manager.input.kb.hold(GLFW_KEY_LEFT)) {
+	    float size = -0.001 * manager.timer.dt();
+	    auto r = glm::quat(cos(size/2), (float)sin(size/2)*camUp);
+	    r = glm::normalize(r);
+	    auto c = glm::conjugate(r);
+	    camPos = r * camPos * c;
+	}
+	if(manager.input.kb.hold(GLFW_KEY_RIGHT)) {
+	    float size = 0.001 * manager.timer.dt();
+	    auto r = glm::quat(cos(size/2), (float)sin(size/2)*camUp);
+	    r = glm::normalize(r);
 	    auto c = glm::conjugate(r);
 	    camPos = r * camPos * c;
 	}
 	
-	manager.render->set3DViewMat(glm::lookAt(camPos, target, up),
-				     camPos);
+	manager.render->set3DViewMat(camView, camPos);
+	
 	// Draw
 	if(manager.winActive()) {
 	    /*manager.render->DrawQuad(testImage,
