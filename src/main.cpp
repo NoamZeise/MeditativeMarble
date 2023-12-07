@@ -5,12 +5,7 @@
 #include <glm/gtc/matrix_inverse.hpp>
 
 #include "third_person_cam.h"
-
-void draw_vect(Render* render,
-	       Resource::Font font,
-	       std::string vname,
-	       glm::vec3 v,
-	       float y);
+#include "debug.h"
 
 int main() {
     ManagerState state;
@@ -28,7 +23,7 @@ int main() {
     Resource::Texture testImage = pool->tex()->load("textures/test.png");
     Resource::Model monkey = pool->model()->load("models/monkey.obj");
     glm::mat4 monkeyMat = glm::translate(glm::mat4(1.0f), glm::vec3(2, 0, 0));
-    Resource::Font font = pool->font()->load("textures/Roboto-Black.ttf");
+    debug::setFont(pool->font()->load("textures/Roboto-Black.ttf"));
     
     manager.render->LoadResourcesToGPU(pool);
     manager.render->UseLoadedResources();
@@ -45,39 +40,27 @@ int main() {
 	    glfwSetWindowShouldClose(manager.window, GLFW_TRUE);
 
 	cam.control(manager.input, manager.timer.dt());
+
 	float speed = 0.01 * manager.timer.dt();
 	if(manager.input.kb.hold(GLFW_KEY_W))
-	    spherePos.y -= speed;
+	    spherePos += speed * cam.getTargetForward();
 	if(manager.input.kb.hold(GLFW_KEY_S))
-	    spherePos.y += speed;
+	    spherePos -= speed * cam.getTargetForward();
 	if(manager.input.kb.hold(GLFW_KEY_A))
-	    spherePos.x -= speed;
+	    spherePos += speed * cam.getTargetLeft();
 	if(manager.input.kb.hold(GLFW_KEY_D))
-	    spherePos.x += speed;
+	    spherePos -= speed * cam.getTargetLeft();
 	camRad += -4*speed * manager.input.m.scroll();
 	sphereMat = glm::translate(glm::mat4(1.0f), glm::vec3(spherePos.x, spherePos.y, spherePos.z));
 
 	cam.setTarget(spherePos, camRad);
 	manager.render->set3DViewMat(cam.getView(), cam.getPos());
 	
-	// Draw
 	if(manager.winActive()) {
 	    manager.render->DrawModel(sphere, sphereMat, glm::inverseTranspose(sphereMat));
 	    manager.render->DrawModel(monkey, monkeyMat, glm::inverseTranspose(monkeyMat));
-	    draw_vect(manager.render, font, "cam pos", cam.getPos(), 50.0);
 	    std::atomic<bool> drawSubmitted;
 	    manager.render->EndDraw(drawSubmitted);
 	}
     }
-}
-
-void draw_vect(Render* render,
-	       Resource::Font font,
-	       std::string vname,
-	       glm::vec3 v, float y) {
-    render->DrawString(font, vname + ": ("
-		       + std::to_string(v.x) + ", "
-		       + std::to_string(v.y) + ", "
-		       + std::to_string(v.z) + ")",
-		       glm::vec2(10, y), 20, 0.9f, glm::vec4(1.0f)); 
 }

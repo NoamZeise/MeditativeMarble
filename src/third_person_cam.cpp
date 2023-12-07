@@ -7,6 +7,11 @@ ThirdPersonCam::ThirdPersonCam() {
     updateView();
 }
 
+void ThirdPersonCam::setWorldUp(glm::vec3 worldUp) {
+    this->worldUp = glm::normalize(worldUp);
+    updateView();
+}
+
 void ThirdPersonCam::setTarget(glm::vec3 target, float radius) {
     this->target = target;
     this->radius = radius;
@@ -34,10 +39,14 @@ void ThirdPersonCam::control(gamehelper::Input &input, double dt) {
 }
 
 void ThirdPersonCam::updateView() {
+    targetForward = glm::normalize(glm::dot(pos, worldUp)*worldUp - pos);
+    targetLeft = glm::normalize(glm::cross(worldUp, targetForward));
     glm::vec3 pos = this->pos * radius;
     forward = glm::normalize(pos);
+    // we normalize here as worldUp and forward
+    // are not perpendicular in general
     left = glm::normalize(glm::cross(worldUp, forward));
-    up = glm::normalize(glm::cross(forward, left));
+    up = glm::cross(forward, left);
     view = glm::mat4(1.0f);
     view[0][0] = left.x;
     view[1][0] = left.y;
