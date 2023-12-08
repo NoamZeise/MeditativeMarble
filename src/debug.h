@@ -12,6 +12,7 @@ namespace debug {
     void setFont(Resource::Font font);
     void draw(Render *render, float height, std::string varName, std::string text);
     void draw(Render *render, float height, std::string varName, glm::vec3 vec);
+    void draw(Render *render, float height, std::string varName, long long f);
 }
 
 #endif /* DEBUG_DRAW_H */

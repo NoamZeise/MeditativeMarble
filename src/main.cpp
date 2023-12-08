@@ -2,12 +2,14 @@
 #include <GameHelper/camera.h>
 #include <graphics/glm_helper.h>
 #include <graphics/logger.h>
+#include <graphics/model/info.h>
 #include <glm/gtc/matrix_inverse.hpp>
 
 #include "third_person_cam.h"
+#include "model_gen.h"
 #include "debug.h"
 
-int main() {
+int main(int argc, char** argv) {
     ManagerState state;
     state.cursor = cursorState::disabled;
     state.windowTitle = "bmjam";
@@ -15,6 +17,10 @@ int main() {
     state.windowHeight = 600;
     state.conf.multisampling = true;
     state.conf.sample_shading = true;
+    if(argc > 1) {
+	if(std::string(argv[1]) == "opengl")
+	    state.defaultRenderer = RenderFramework::OpenGL;
+    }
 
     Manager manager(state);
     ResourcePool* pool = manager.render->pool();
@@ -22,8 +28,13 @@ int main() {
     glm::mat4 sphereMat = glm::mat4(1.0f);
     Resource::Texture testImage = pool->tex()->load("textures/test.png");
     Resource::Model monkey = pool->model()->load("models/monkey.obj");
-    glm::mat4 monkeyMat = glm::translate(glm::mat4(1.0f), glm::vec3(2, 0, 0));
+    glm::mat4 monkeyMat = glm::translate(glm::mat4(1.0f), glm::vec3(5, 0, 0));
     debug::setFont(pool->font()->load("textures/Roboto-Black.ttf"));
+
+    ModelInfo::Model gennedModelInfo = genModel();
+    Resource::Model genM = pool->model()->load(gennedModelInfo);
+    glm::mat4 genMat(1.0f);
+    
     
     manager.render->LoadResourcesToGPU(pool);
     manager.render->UseLoadedResources();
@@ -58,7 +69,7 @@ int main() {
 	
 	if(manager.winActive()) {
 	    manager.render->DrawModel(sphere, sphereMat, glm::inverseTranspose(sphereMat));
-	    manager.render->DrawModel(monkey, monkeyMat, glm::inverseTranspose(monkeyMat));
+	    manager.render->DrawModel(genM, genMat, glm::inverseTranspose(genMat));
 	    std::atomic<bool> drawSubmitted;
 	    manager.render->EndDraw(drawSubmitted);
 	}

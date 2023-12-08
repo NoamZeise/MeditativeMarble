@@ -1,6 +1,7 @@
 add_executable(bmjam
   main.cpp
   third_person_cam.cpp
+  model_gen.cpp
   debug.cpp)
 target_link_options(bmjam PRIVATE ${SUBSYSTEM_LINKER_OPTIONS})
 target_link_libraries(bmjam GraphicsEnv)
