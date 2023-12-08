@@ -1,30 +1,59 @@
 #include "model_gen.h"
 #include <glm/glm.hpp>
+#include <functional>
 
-ModelInfo::Model genModel() {
-    ModelInfo::Model model;
+const float PI = 3.141592653589;
+
+glm::vec3 sphere(float theta, float phi) {
+    float rad = 5;
+    return {
+	rad*sin(theta)*cos(phi),
+	rad*sin(theta)*sin(phi),
+    	rad*cos(theta)};
+}
+
+struct Var {
+    float start;
+    float end;
+    float step = 1;
+};
+
+ModelInfo::Model genSurface(
+	std::function<glm::vec3(float, float)> surfaceFn,
+	Var var1, Var var2) {
+   ModelInfo::Model model;
     ModelInfo::Mesh m;
     
-    float height = -5;
-    float sf = 0.2;
-    float cf = 0.3;
-    int first_i = -100;
-    int first_j = -100;
-    for(int i = first_i; i < 100; i++) {
-	for(int j = first_j; j < 100; j++) {
+    for(float x = var1.start; x < var1.end; x+=var1.step) {
+	for(float y = var2.start; y < var2.end; y+=var2.step) {
 	    ModelInfo::Vertex v1, v2, v3, v4;
-	    
-	    v1.Position = glm::vec3(0 + i, 0 + j , height + sin(i*sf) + cos(j*cf));
-	    v2.Position = glm::vec3(0 + i, 1 + j, height+ sin(i*sf) + cos((1+j)*cf));
-	    v3.Position = glm::vec3(1 + i, 0 + j, height+ sin((1+i)*sf) + cos(j*cf));
-	    v4.Position = glm::vec3(1 + i, 1 + j, height+ sin((1+i)*sf) + cos((1+j)*cf));
 
+	    v1.Position = surfaceFn(x,        y);
+	    v2.Position = surfaceFn(x,        y+var2.step);
+	    v3.Position = surfaceFn(x+var1.step, y);
+	    v4.Position = surfaceFn(x+var1.step, y+var2.step);
+
+	    // if 2 points of the square are the same, then use the adjacent
+	    // edge to calculate the normal
+	    glm::vec3 s2 = v2.Position;
+	    glm::vec3 s3 = v3.Position;
+	    if(v1.Position == v2.Position)
+		s2 = v4.Position;
+	    if(v1.Position == v3.Position)
+		s3 = v4.Position;
 	    glm::vec3 tri_n1 = glm::cross(
-		    v1.Position - v3.Position,
-		    v1.Position - v2.Position);
+		    v1.Position - s3,
+		    v1.Position - s2);
+	    s2 = v2.Position;
+	    s3 = v3.Position;
+	    if(v4.Position == v2.Position)
+		s3 = v1.Position;
+	    if(v4.Position == v3.Position)
+		s2 = v1.Position;
 	    glm::vec3 tri_n2 = glm::cross(		    
-		    v4.Position - v2.Position,
-		    v4.Position - v3.Position);
+		    v4.Position - s2,
+		    v4.Position - s3);
+	    
 	    tri_n1 = glm::normalize(tri_n1);
 	    tri_n2 = glm::normalize(tri_n2);
 	    v1.Normal = tri_n1;
@@ -47,7 +76,13 @@ ModelInfo::Model genModel() {
 	    m.indices.push_back(vi + 3);
 	}
     }
-    m.diffuseColour = glm::vec4(0.2, 0.6, 0.05, 1);
+    m.diffuseColour = glm::vec4(0.4, 0.8, 0.1, 1);
     model.meshes = {m};
     return model;
 }
+
+
+ModelInfo::Model genModel() {
+    return genSurface(sphere, {0, PI, 0.04f*PI}, {0, 2*PI, 0.02f*PI});
+}
+

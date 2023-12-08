@@ -61,8 +61,13 @@ int main(int argc, char** argv) {
 	    spherePos += speed * cam.getTargetLeft();
 	if(manager.input.kb.hold(GLFW_KEY_D))
 	    spherePos -= speed * cam.getTargetLeft();
+	if(manager.input.kb.hold(GLFW_KEY_SPACE))
+	    spherePos.z += speed;
+	if(manager.input.kb.hold(GLFW_KEY_LEFT_SHIFT))
+	    spherePos.z -= speed;
 	camRad += -4*speed * manager.input.m.scroll();
-	sphereMat = glm::translate(glm::mat4(1.0f), glm::vec3(spherePos.x, spherePos.y, spherePos.z));
+	sphereMat = glm::translate(glm::mat4(1.0f),
+				   glm::vec3(spherePos.x, spherePos.y, spherePos.z));
 
 	cam.setTarget(spherePos, camRad);
 	manager.render->set3DViewMat(cam.getView(), cam.getPos());
