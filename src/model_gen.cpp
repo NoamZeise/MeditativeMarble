@@ -3,6 +3,8 @@
 #include <glm/glm.hpp>
 #include <functional>
 
+#include "noise.h"
+
 const float PI = 3.141592653589;
 
 struct Var {
@@ -35,11 +37,22 @@ int quadvi(int i, int j, int j_width, int vert) {
     return (i * j_width  + j) * QUAD_SIZE + vert;
 }
 
+void addNormal(glm::vec3 &prevNorm, glm::vec3 newNorm) {
+    if(prevNorm == glm::vec3(0)) {
+	prevNorm += newNorm;
+	newNorm/=2;
+    } else {
+	prevNorm = newNorm;
+    }
+}
+
 ModelInfo::Model genSurface(
 	std::function<glm::vec3(float, float)> surfaceFn,
+	bool doubleEdge,
 	Var var1, Var var2) {
     ModelInfo::Model model;
     ModelInfo::Mesh m;
+    
     int i = 0;
     int width = (var2.end - var2.start) / var2.step;
     for(float x = var1.start; x < var1.end; x+=var1.step, i++) {
@@ -47,8 +60,6 @@ ModelInfo::Model genSurface(
 	for(float y = var2.start; y < var2.end; y+=var2.step, j++) {
 	    int i1, i2, i3, i4;
 	    
-	    bool doubleEdge = false;
-
 	    if((i == 0 && j == 0) || doubleEdge) {
 		m.verticies.push_back(ModelInfo::Vertex());
 		i1 = m.verticies.size() - 1;
@@ -87,9 +98,8 @@ ModelInfo::Model genSurface(
 		v2(m.verticies[i2].Position),
 		v3(m.verticies[i3].Position),
 		v4(m.verticies[i4].Position);
-	    
-	    // if 2 points of the square are the same, then use the adjacent
-	    // edge to calculate the normal
+
+	    //calc triangle normals
 	    glm::vec3 s2 = v2;
 	    glm::vec3 s3 = v3;
 	    if(v1 == v2)
@@ -111,12 +121,13 @@ ModelInfo::Model genSurface(
 	    
 	    tri_n1 = glm::normalize(tri_n1);
 	    tri_n2 = glm::normalize(tri_n2);
-	    m.verticies[i1].Normal = tri_n1;
-	    m.verticies[i2].Normal = tri_n1 + tri_n2;
-	    m.verticies[i2].Normal /= 2;
-	    m.verticies[i3].Normal = m.verticies[i2].Normal;
-	    m.verticies[i4].Normal = tri_n2;
-	    
+	    glm::vec3 mid_n = 0.5f * (tri_n1 + tri_n2);
+	    addNormal(m.verticies[i1].Normal, tri_n1);
+	    addNormal(m.verticies[i2].Normal, mid_n);
+	    addNormal(m.verticies[i3].Normal, mid_n);
+	    addNormal(m.verticies[i4].Normal, tri_n2);
+
+	    //add quad
 	    m.indices.push_back(i3);
 	    m.indices.push_back(i2);
 	    m.indices.push_back(i1);
@@ -139,14 +150,20 @@ glm::vec3 sphere(float theta, float phi) {
 }
 
 ModelInfo::Model genSphere() {
-    return genSurface(sphere, {0, PI, 0.04f*PI}, {0, 2*PI, 0.02f*PI});
+    return genSurface(sphere, false, {0, PI, 0.04f*PI}, {0, 2*PI, 0.02f*PI});
 }
 
 glm::vec3 land(float x, float y) {
     return glm::vec3(x, y, sin(0.1*x)*cos(0.3*y)*2 - 4);
 }
 
+glm::vec3 noise_land(float x, float y) {
+    return glm::vec3(x, y, noise::simplex(x*0.05, y*0.05, 0)*10);
+}
+
 ModelInfo::Model genModel() {
-    return genSurface(land, {-100, 100, 1}, {-100, 100, 1});
+    //return genSphere();
+    //genSurface(land, false, {-100, 100, 1}, {-100, 100, 1});
+    return genSurface(noise_land, true, {-100, 100, 1}, {-100, 100, 1});
 }
 
