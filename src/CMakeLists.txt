@@ -3,7 +3,8 @@ add_executable(bmjam
   third_person_cam.cpp
   model_gen.cpp
   noise.cpp
-  debug.cpp)
+  debug.cpp
+  player.cpp)
 target_link_options(bmjam PRIVATE ${SUBSYSTEM_LINKER_OPTIONS})
 target_link_libraries(bmjam GraphicsEnv)
 

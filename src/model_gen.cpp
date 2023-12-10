@@ -159,7 +159,7 @@ glm::vec3 land(float x, float y) {
 
 glm::vec3 noise_land(float x, float y) {
     float i[3] = {x*0.035f, y*0.032f, 6.0f};
-    return glm::vec3(x, y, noise::simplex<3>(i)*4);
+    return glm::vec3(x, y, noise::simplex<3>(i)*4 - 5);
 }
 
 ModelInfo::Model genModel() {
