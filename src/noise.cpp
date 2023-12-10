@@ -47,7 +47,7 @@ namespace noise {
   /// source of algorithm design:
   /// Course Notes: Chapter 2 - Noise Hardware, By Ken Perlin
   /// https://www.csee.umbc.edu/~olano/s2002c36/ch02.pdf
-  float simplex(float x, float y, float z, float w) {
+  float simplex(float x, float y, float z) {
       const int dim = 3;
       float input[] = {x, y, z};
 
