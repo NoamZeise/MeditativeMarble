@@ -43,6 +43,7 @@ Player::Player(Resource::Model model) : Obj3D(model) {}
 
 void Player::Update(Input &input, Timer &timer,
 		    glm::vec3 forward, glm::vec3 left) {
+    prevPos = getPos();
     float speed = movespeed * timer.dt();
     glm::vec3 spherePos = getPos();
     if(input.kb.hold(GLFW_KEY_W))

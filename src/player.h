@@ -32,6 +32,7 @@ class Player : public Obj3D {
     Player(Resource::Model model);
     void Update(Input &input, Timer &timer,
 		glm::vec3 forward, glm::vec3 left);
+    glm::vec3 prevPos = glm::vec3(0);
  private:
     float movespeed = 0.01;
 };

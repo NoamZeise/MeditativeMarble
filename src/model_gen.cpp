@@ -7,12 +7,6 @@
 
 const float PI = 3.141592653589;
 
-struct Var {
-    float start;
-    float end;
-    float step = 1;
-};
-
 int quadvi(int i, int j, int j_width, int vert) {
     // 6 inds per quad - v3, v2, v1, v2, v3, v4
     switch(vert) {
@@ -48,8 +42,8 @@ void addNormal(glm::vec3 &prevNorm, glm::vec3 newNorm) {
 
 ModelInfo::Model genSurface(
 	std::function<glm::vec3(float, float)> surfaceFn,
-	bool doubleEdge,
-	Var var1, Var var2) {
+	bool smoothShading,
+	SurfaceParam var1, SurfaceParam var2) {
     ModelInfo::Model model;
     ModelInfo::Mesh m;
     
@@ -60,7 +54,7 @@ ModelInfo::Model genSurface(
 	for(float y = var2.start; y < var2.end; y+=var2.step, j++) {
 	    int i1, i2, i3, i4;
 	    
-	    if((i == 0 && j == 0) || doubleEdge) {
+	    if((i == 0 && j == 0) || !smoothShading) {
 		m.verticies.push_back(ModelInfo::Vertex());
 		i1 = m.verticies.size() - 1;
 		m.verticies[i1].Position = surfaceFn(x,y);
@@ -74,7 +68,7 @@ ModelInfo::Model genSurface(
 		}
 	    }
 	    
-	    if(i==0 || doubleEdge) {
+	    if(i==0 || !smoothShading) {
 		m.verticies.push_back(ModelInfo::Vertex());
 		i2 = m.verticies.size() - 1;
 		m.verticies[i2].Position = surfaceFn(x,y+var2.step);
@@ -82,7 +76,7 @@ ModelInfo::Model genSurface(
 		i2 = m.indices[quadvi(i-1,j,width,4)];
 	    }
 	    
-	    if(j==0 || doubleEdge) {
+	    if(j==0 || !smoothShading) {
 		m.verticies.push_back(ModelInfo::Vertex());
 		i3 = m.verticies.size() - 1;
 		m.verticies[i3].Position = surfaceFn(x+var1.step,y);	
@@ -136,7 +130,7 @@ ModelInfo::Model genSurface(
 	    m.indices.push_back(i4);
 	}
     }
-    m.diffuseColour = glm::vec4(0.4, 0.8, 0.1, 1);
+    m.diffuseColour = glm::vec4(1);
     model.meshes = {m};
     return model;
 }
@@ -161,11 +155,3 @@ glm::vec3 noise_land(float x, float y) {
     float i[3] = {x*0.035f, y*0.032f, 6.0f};
     return glm::vec3(x, y, noise::simplex<3>(i)*4 - 5);
 }
-
-ModelInfo::Model genModel() {
-    //return genSphere();
-    //genSurface(land, false, {-100, 100, 1}, {-100, 100, 1});
-    //genSurface(noise_land_2, false, {-100, 100, 1}, {-100, 100, 1});
-    return genSurface(noise_land, false, {-100, 100, 1}, {-100, 100, 1});
-}
-

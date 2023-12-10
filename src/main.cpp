@@ -5,8 +5,8 @@
 #include <glm/gtc/matrix_inverse.hpp>
 
 #include "third_person_cam.h"
-#include "model_gen.h"
 #include "player.h"
+#include "world.h"
 #include "debug.h"
 
 int main(int argc, char** argv) {
@@ -27,36 +27,46 @@ int main(int argc, char** argv) {
     Player player(pool->model()->load("models/sphere.obj"));
     Resource::Texture testImage = pool->tex()->load("textures/test.png");
     debug::setFont(pool->font()->load("textures/Roboto-Black.ttf"));
-
-    ModelInfo::Model gennedModelInfo = genModel();
-    Resource::Model genM = pool->model()->load(gennedModelInfo);
-    glm::mat4 genMat(1.0f);
-
+    World world(pool->model());
     
     manager.render->LoadResourcesToGPU(pool);
     manager.render->UseLoadedResources();
 
     ThirdPersonCam cam;
     float camRad = 5.0f;
-
+    
+    std::string drawStats, updateStats;
     while(!glfwWindowShouldClose(manager.window)) {
 	// Update
+	auto start = std::chrono::high_resolution_clock::now();
 	manager.update();
 	if(manager.input.kb.press(GLFW_KEY_ESCAPE))
 	    glfwSetWindowShouldClose(manager.window, GLFW_TRUE);
 
 	player.Update(manager.input, manager.timer, cam.getTargetForward(), cam.getTargetLeft());
-	
+	if(world.checkCollision(player.getPos())) {
+	    player.setPos(player.prevPos);
+	}
 	cam.control(manager.input, manager.timer.dt());
 	camRad += -0.04*manager.timer.dt() * manager.input.m.scroll();
 	cam.setTarget(player.getPos(), camRad);
 	manager.render->set3DViewMat(cam.getView(), cam.getPos());
+
+	updateStats = std::to_string(
+		std::chrono::duration_cast<std::chrono::microseconds>(
+			std::chrono::high_resolution_clock::now() - start).count() / 1000.0)
+	    + " ms";
 	
 	if(manager.winActive()) {
 	    player.Draw(manager.render);
-	    manager.render->DrawModel(genM, genMat, glm::inverseTranspose(genMat));
+	    world.Draw(manager.render);
+	    debug::draw(manager.render, 30, "update", updateStats);
+	    debug::draw(manager.render, 50, "draw", drawStats);
 	    std::atomic<bool> drawSubmitted;
 	    manager.render->EndDraw(drawSubmitted);
+	    drawStats = std::to_string(
+		    1.0 / std::chrono::duration_cast<std::chrono::microseconds>(
+			    std::chrono::high_resolution_clock::now() - start).count() * 1000000.0) + " fps";
 	}
     }
 }

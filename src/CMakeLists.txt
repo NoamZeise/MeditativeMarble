@@ -4,7 +4,8 @@ add_executable(bmjam
   model_gen.cpp
   noise.cpp
   debug.cpp
-  player.cpp)
+  player.cpp
+  world.cpp)
 target_link_options(bmjam PRIVATE ${SUBSYSTEM_LINKER_OPTIONS})
 target_link_libraries(bmjam GraphicsEnv)
 
