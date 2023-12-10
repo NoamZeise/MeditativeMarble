@@ -6,6 +6,7 @@
 namespace noise {
 
   // https://mrl.cs.nyu.edu/~perlin/noise/
+  // 1-255 randomly distributed
   static int p[256] = {
       151, 160, 137, 91,  90,  15,  131, 13,  201, 95,  96,  53,  194, 233, 7,
       225, 140, 36,  103, 30,  69,  142, 8,   99,  37,  240, 21,  10,  23,  190,
@@ -25,23 +26,28 @@ namespace noise {
       84,  204, 176, 115, 121, 50,  45,  127, 4,   150, 254, 138, 236, 205, 93,
       222, 114, 67,  29,  24,  72,  243, 141, 128, 195, 78,  66,  215, 61,  156,
       180};
+  
+  // grad based on grad in simplexnoise1234.cpp by Stefan Gustavson
+  //https://web.archive.org/web/20221112031018/https://weber.itn.liu.se/~stegu/aqsis/aqsis-newnoise/
+  float grad(int hash, float* input, int dim) {
+      int h = hash & (1 << (dim+1)) - 1;
+      float result = 0;
+      for(int i = 0; i < dim - 1; i++) {
+	  float val = 0;
+	  float alt = (dim == 3 && i == 2) ?
+	      ((h == 12 || h == 14) ? input[0] : input[i+1])
+	      : input[i + 1];
+	  val = (h < (1 << (dim - (i + 1)))) ? input[i] : alt;
+	  result += (h&i) ? -val : val;
+      }
 
-  /// https://github.com/SRombauts/SimplexNoise/blob/master/src/SimplexNoise.cpp
-  int hash(int n) {
-      return p[(uint8_t)n];
-  }
-  /// https://github.com/SRombauts/SimplexNoise/blob/master/src/SimplexNoise.cpp
-  float grad(int hash, float x, float y, float z) {
-      int h = hash & 15;     // Convert low 4 bits of hash code into 12 simple
-      float u = h < 8 ? x : y; // gradient directions, and compute dot product.
-      float v = h < 4 ? y : h == 12 || h == 14 ? x : z; // Fix repeats at h = 12 to 15
-      return ((h & 1) ? -u : u) + ((h & 2) ? -v : v);
+      return result;
   }
 
   /// source of algorithm design:
   /// Course Notes: Chapter 2 - Noise Hardware, By Ken Perlin
   /// https://www.csee.umbc.edu/~olano/s2002c36/ch02.pdf
-  float simplex(float x, float y, float z) {
+  float simplex(float x, float y, float z, float w) {
       const int dim = 3;
       float input[] = {x, y, z};
 
@@ -95,38 +101,27 @@ namespace noise {
 	  // unskew factor * sum of coords of simplex verts
 	  unskewSimplex[i] = unskewFactor * i;
       }
-      double simplexOffsets[dim+1][dim];
+      float simplexOffsets[dim+1][dim];
       for(int i = 0; i < dim; i++) {
 	  for(int j = 0; j < dim + 1; j++) {
 	      simplexOffsets[j][i] = inputUnskew[i] - simplexPos[j][i] +
 		  unskewSimplex[j];
 	  }
       }
-
-      //hash indices
+      
+      float result = 0;
       int hashedInds[dim + 1];
       for(int i = 0; i < dim + 1; i++) {
 	  hashedInds[i] = 0;
+	  float t = 0.6;
 	  for(int j = dim - 1; j >= 0; j--) {
 	      hashedInds[i] =
-		  hash(cube[j] + hashedInds[i] + simplexPos[i][j]);
-	  }
-      }
-
-      float result = 0;
-      for(int i = 0; i < dim + 1; i++) {
-	  float t = 0.6;
-	  for(int j = 0; j < dim && t > 0; j++) {
+		  p[(cube[j] + hashedInds[i] + simplexPos[i][j]) & 0xff];
 	      t -= pow(simplexOffsets[i][j], 2);
 	  }
-	  if(t > 0) {
-	      result += pow(t, 4) * grad(hashedInds[i],
-					 simplexOffsets[i][0],
-					 simplexOffsets[i][1],
-					 simplexOffsets[i][2]);
-	  }
-      }
-      
+	  result += t <= 0 ? 0 :
+	      pow(t, 4) * grad(hashedInds[i], simplexOffsets[i], dim);
+      }      
       return 32 * result; //scale to range [-1,1]
   }
 
