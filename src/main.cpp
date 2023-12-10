@@ -1,5 +1,4 @@
 #include <manager.h>
-#include <GameHelper/camera.h>
 #include <graphics/glm_helper.h>
 #include <graphics/logger.h>
 #include <graphics/model/info.h>

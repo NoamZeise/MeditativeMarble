@@ -20,7 +20,7 @@ void ThirdPersonCam::setTarget(glm::vec3 target, float radius) {
     updateView();
 }
 
-void ThirdPersonCam::control(gamehelper::Input &input, double dt) {
+void ThirdPersonCam::control(Input &input, double dt) {
     glm::vec2 ctrlDir(-input.m.dx(), -input.m.dy());
     ctrlDir *= mouseSensitivity;
     if(ctrlDir.x != 0 || ctrlDir.y != 0) {

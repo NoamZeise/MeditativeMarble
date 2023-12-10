@@ -2,8 +2,8 @@
 #define PLAYER_H
 
 #include <graphics/render.h>
-#include <GameHelper/input.h>
-#include <GameHelper/timer.h>
+#include <game/input.h>
+#include <game/timer.h>
 
 class Obj3D {
  public:
@@ -30,7 +30,7 @@ class Player : public Obj3D {
  public:
     Player() {}
     Player(Resource::Model model);
-    void Update(gamehelper::Input &input, gamehelper::Timer &timer,
+    void Update(Input &input, Timer &timer,
 		glm::vec3 forward, glm::vec3 left);
  private:
     float movespeed = 0.01;

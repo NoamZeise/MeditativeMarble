@@ -2,12 +2,12 @@
 #define THIRD_PERSON_CAM_H
 
 #include <glm/glm.hpp>
-#include <GameHelper/input.h>
+#include <game/input.h>
 
 class ThirdPersonCam {
  public:
     ThirdPersonCam();
-    void control(gamehelper::Input &input, double dt);
+    void control(Input &input, double dt);
     void setTarget(glm::vec3 target, float radius);
     glm::mat4 getView() { return view; }
     glm::vec3 getPos() { return worldPos; }

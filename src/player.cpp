@@ -41,7 +41,7 @@ void Obj3D::Draw(Render *render) {
 
 Player::Player(Resource::Model model) : Obj3D(model) {}
 
-void Player::Update(gamehelper::Input &input, gamehelper::Timer &timer,
+void Player::Update(Input &input, Timer &timer,
 		    glm::vec3 forward, glm::vec3 left) {
     float speed = movespeed * timer.dt();
     glm::vec3 spherePos = getPos();
