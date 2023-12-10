@@ -158,12 +158,14 @@ glm::vec3 land(float x, float y) {
 }
 
 glm::vec3 noise_land(float x, float y) {
-    return glm::vec3(x, y, noise::simplex(x*0.035, y*0.032, 6)*4);
+    float i[3] = {x*0.035f, y*0.032f, 6.0f};
+    return glm::vec3(x, y, noise::simplex<3>(i)*4);
 }
 
 ModelInfo::Model genModel() {
     //return genSphere();
     //genSurface(land, false, {-100, 100, 1}, {-100, 100, 1});
+    //genSurface(noise_land_2, false, {-100, 100, 1}, {-100, 100, 1});
     return genSurface(noise_land, false, {-100, 100, 1}, {-100, 100, 1});
 }
 
