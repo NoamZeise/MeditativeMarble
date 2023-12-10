@@ -1,5 +1,6 @@
 #include "noise.h"
 #include <graphics/logger.h>
+#include <math.h>
 
 namespace noise {
 
