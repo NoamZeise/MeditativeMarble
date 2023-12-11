@@ -5,21 +5,26 @@
 
 glm::vec3 surfaceFn(float x, float y) {
     float i[] = {x*0.004f, y*0.004f, 0};
-    return glm::vec3(x, y, (noise::simplex<3>(i) * 80 - 100));
+    return glm::vec3(x, y, (noise::simplex<3>(i) * 40 - 100));
+    // return glm::vec3(x, y, (sin(x*0.01) + cos(y*0.01))*100 - 120);
 }
 
 
 World::World(ModelLoader *loader) {
     ModelInfo::Model gennedModelInfo = genSurface(
-	    surfaceFn, false,
-	    {-1000.0f, 1000.0f, 4.0f},
-	    {-1000.0f, 1000.0f, 4.0f});
-    gennedModelInfo.meshes.back().diffuseColour = glm::vec4(0.3, 0.7, 0.4, 1);
+	    surfaceFn, true,
+	    {-500.0f, 500.0f, 4.0f},
+	    {-500.0f, 500.0f, 4.0f});
+    gennedModelInfo.meshes.back().diffuseColour = glm::vec4(0.3, 0.5, 0.2, 1);
     model = loader->load(gennedModelInfo);
 }
 
 bool World::checkCollision(glm::vec3 pos) {
     return pos.z < surfaceFn(pos.x, pos.y).z;
+}
+
+void World::Update(ResourcePool* pool, glm::vec3 playerPos) {
+    ///TODO: load/unload map as player moves around
 }
 
 void World::Draw(Render* render) {
@@ -41,7 +46,7 @@ glm::vec3 World::nearestPoint(glm::vec3 pos) {
     float b = pos.y;
     float h = 0.1f;
     float step = 0.1f;
-    const int ITERS = 20;
+    const int ITERS = 10;
     for(int i = 0; i < ITERS; i++) {
 	// calc del(d2(a, b))
 	float r = d2(a, b);

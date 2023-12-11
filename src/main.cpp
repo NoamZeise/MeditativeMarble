@@ -17,6 +17,7 @@ int main(int argc, char** argv) {
     state.windowHeight = 600;
     state.conf.multisampling = true;
     state.conf.sample_shading = true;
+    state.conf.depth_range_3D[1] = 10000.0f;
     if(argc > 1) {
 	if(std::string(argv[1]) == "opengl")
 	    state.defaultRenderer = RenderFramework::OpenGL;
@@ -35,6 +36,10 @@ int main(int argc, char** argv) {
     
     manager.render->LoadResourcesToGPU(pool);
     manager.render->UseLoadedResources();
+
+    BPLighting light;
+    light.direction = glm::vec4(0.3, 0.5, -1, 0);
+    manager.render->setLightingProps(light);
 
     ThirdPersonCam cam;
     float camRad = 5.0f;

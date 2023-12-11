@@ -9,19 +9,37 @@ void PhysObj::addAcceleration(glm::vec3 acceleration) {
 }
 
 void Sphere::worldCollision(World *world) {
+    grounded = false;
     glm::vec3 np = world->nearestPoint(pos);
     glm::vec3 dir = np - pos;
     bool insideShape = world->checkCollision(pos);
     if(insideShape || glm::dot(dir, dir) < radius*radius) {
+	grounded = true;
 	glm::vec3 toSurf = glm::normalize(dir);
-	glm::vec3 change = toSurf;
+	glm::vec3 collisionN = toSurf;
 	if(!insideShape) {
-	    change *= -1;
+	    collisionN *= -1;
 	}
-	pos += dir + change;
-	glm::vec3 bounce = glm::dot(-change, velocity)*change;
-	velocity += bounce;
+	// push sphere out of surface
+	pos += dir + collisionN;
+
+	//bounce
+	glm::vec3 bounce = glm::dot(-collisionN, velocity)*collisionN;
+	velocity += bounce*bounceCoeff;
+
+	//friction
+	glm::vec3 side = glm::normalize(glm::cross(velocity, -collisionN));
+	glm::vec3 collisionT = glm::cross(-collisionN, side);
+	glm::vec3 friction = glm::dot(-collisionT, velocity)*collisionT;
+	velocity += friction*frictionCoeff;
+
+	//spin
+	//TODO
     }
+}
+
+void Sphere::Update(long long dt) {
+    PhysObj::Update(dt);
 }
 
 void PhysObj::Update(long long dt) {
@@ -40,7 +58,7 @@ void PhysObj::Update(long long dt) {
 /// --- Physics Manager ---
 
 PhysicsManager::PhysicsManager(World *world) {
-    this->globalAcceleration = glm::vec3(0, 0, -0.00005);
+    this->globalAcceleration = glm::vec3(0, 0, -0.0001);
     this->world = world;
 }
 
