@@ -10,10 +10,7 @@ public:
     glm::vec3 getPos() {
 	return pos;
     }
-    void fixPos() {
-	pos = prevPos;
-	velocity.z = 0;
-    }
+    void fixPos(glm::vec3 collisionPoint);
  private:
     glm::vec3 pos = glm::vec3(0);
     glm::vec3 prevPos = glm::vec3(0);

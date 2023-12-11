@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
 	player.Update(manager.input, manager.timer, cam.getTargetForward(), cam.getTargetLeft());
 	player.PhysObj::Update(manager.timer.dt());
 	if(world.checkCollision(player.PhysObj::getPos())) {
-	    player.fixPos();	    
+	    player.fixPos(player.PhysObj::getPos() - glm::vec3(0, 0, 1));	    
 	}
 	cam.control(manager.input, manager.timer.dt());
 	camRad += -0.04*manager.timer.dt() * manager.input.m.scroll();
