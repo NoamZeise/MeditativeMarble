@@ -24,10 +24,14 @@ int main(int argc, char** argv) {
 
     Manager manager(state);
     ResourcePool* pool = manager.render->pool();
-    Player player(pool->model()->load("models/sphere.obj"));
+    
     Resource::Texture testImage = pool->tex()->load("textures/test.png");
     debug::setFont(pool->font()->load("textures/Roboto-Black.ttf"));
+
+    Player player(pool->model()->load("models/sphere.obj"));
     World world(pool->model());
+    PhysicsManager pm(&world);
+    pm.addPhysObj(&player);
     
     manager.render->LoadResourcesToGPU(pool);
     manager.render->UseLoadedResources();
@@ -44,10 +48,7 @@ int main(int argc, char** argv) {
 	    glfwSetWindowShouldClose(manager.window, GLFW_TRUE);
 
 	player.Update(manager.input, manager.timer, cam.getTargetForward(), cam.getTargetLeft());
-	player.PhysObj::Update(manager.timer.dt());
-	if(world.checkCollision(player.PhysObj::getPos())) {
-	    player.fixPos(player.PhysObj::getPos() - glm::vec3(0, 0, 1));	    
-	}
+	pm.Update(manager.timer.dt());
 	cam.control(manager.input, manager.timer.dt());
 	camRad += -0.04*manager.timer.dt() * manager.input.m.scroll();
 	cam.setTarget(player.Obj3D::getPos(), camRad);
@@ -63,6 +64,7 @@ int main(int argc, char** argv) {
 	    world.Draw(manager.render);
 	    debug::draw(manager.render, 30, "update", updateStats);
 	    debug::draw(manager.render, 50, "draw", drawStats);
+	    debug::draw(manager.render, 80, "velocity", player.getVel());
 	    std::atomic<bool> drawSubmitted;
 	    manager.render->EndDraw(drawSubmitted);
 	    drawStats = std::to_string(

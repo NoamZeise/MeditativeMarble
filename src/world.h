@@ -8,6 +8,7 @@ class World {
  public:
     World(ModelLoader *loader);
     bool checkCollision(glm::vec3 pos);
+    glm::vec3 nearestPoint(glm::vec3 pos);
     void Draw(Render* render);
  private:
     Resource::Model model;
