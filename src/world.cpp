@@ -4,8 +4,8 @@
 #include "noise.h"
 
 glm::vec3 surfaceFn(float x, float y) {
-    float i[] = {x*0.01f, y*0.01f};
-    return glm::vec3(x, y, noise::simplex<2>(i) * 10 - 12);
+    float i[] = {x*0.008f, y*0.008f, 0};
+    return glm::vec3(x, y, noise::simplex<3>(i) * 15 - 20);
 }
 
 

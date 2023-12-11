@@ -8,7 +8,7 @@ Obj3D::Obj3D(Resource::Model model) {
 }
 
 void Obj3D::setPos(glm::vec3 pos) {
-    this->pos = pos;
+    this->modelPos = pos;
     updateMat();
 }
 
@@ -27,7 +27,7 @@ void Obj3D::updateMat() {
 		glm::scale(
 			glm::mat4(1.0f),
 			scale),
-		pos);
+		modelPos);
     normalMat = glm::inverseTranspose(modelMat);
 }
 
@@ -35,29 +35,33 @@ void Obj3D::Draw(Render *render) {
     render->DrawModel(model, modelMat, normalMat, colour);
 }
 
-
-
 /// --- Player ---
 
-Player::Player(Resource::Model model) : Obj3D(model) {}
+Player::Player(Resource::Model model) : Obj3D(model) {
+    radius = 1;
+    setScale(glm::vec3(radius));
+}
 
 void Player::Update(Input &input, Timer &timer,
 		    glm::vec3 forward, glm::vec3 left) {
-    prevPos = getPos();
-    float speed = movespeed * timer.dt();
-    glm::vec3 spherePos = getPos();
+    Obj3D::setPos(PhysObj::getPos());
+    
+    glm::vec3 acceleration(0);
     if(input.kb.hold(GLFW_KEY_W))
-	spherePos += speed * forward;
+	acceleration += speed * forward;
     if(input.kb.hold(GLFW_KEY_S))
-	spherePos -= speed * forward;
+	acceleration -= speed * forward;
     if(input.kb.hold(GLFW_KEY_A))
-	spherePos += speed * left;
+	acceleration += speed * left;
     if(input.kb.hold(GLFW_KEY_D))
-	spherePos -= speed * left;
+	acceleration -= speed * left;
     if(input.kb.hold(GLFW_KEY_SPACE))
-	spherePos.z += speed;
+	acceleration.z += speed;
     if(input.kb.hold(GLFW_KEY_LEFT_SHIFT))
-	spherePos.z -= speed;
-    if(spherePos != getPos())
-	setPos(spherePos);
+	acceleration.z -= speed;
+    setAcceleration(acceleration);
+}
+
+void Player::Draw(Render* render) {
+    Obj3D::Draw(render);
 }

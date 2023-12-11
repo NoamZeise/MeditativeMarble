@@ -44,12 +44,13 @@ int main(int argc, char** argv) {
 	    glfwSetWindowShouldClose(manager.window, GLFW_TRUE);
 
 	player.Update(manager.input, manager.timer, cam.getTargetForward(), cam.getTargetLeft());
-	if(world.checkCollision(player.getPos())) {
-	    player.setPos(player.prevPos);
+	player.PhysObj::Update(manager.timer.dt());
+	if(world.checkCollision(player.PhysObj::getPos())) {
+	    player.fixPos();	    
 	}
 	cam.control(manager.input, manager.timer.dt());
 	camRad += -0.04*manager.timer.dt() * manager.input.m.scroll();
-	cam.setTarget(player.getPos(), camRad);
+	cam.setTarget(player.Obj3D::getPos(), camRad);
 	manager.render->set3DViewMat(cam.getView(), cam.getPos());
 
 	updateStats = std::to_string(
