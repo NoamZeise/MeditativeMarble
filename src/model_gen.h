@@ -12,7 +12,7 @@ struct SurfaceParam {
 
 ModelInfo::Model genSurface(
 	std::function<glm::vec3(float, float)> surfaceFn,
-	bool smoothShading,
+	bool smoothShading, float uvDensity,
 	SurfaceParam a,
 	SurfaceParam b);
 

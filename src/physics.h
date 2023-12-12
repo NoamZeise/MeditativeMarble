@@ -9,6 +9,7 @@ public:
     virtual void Update(long long dt);
     void setAcceleration(glm::vec3 acceleration);
     void addAcceleration(glm::vec3 acceleration);
+    void addVelocity(glm::vec3 velocity);
     glm::vec3 getVel() { return velocity; }
     glm::vec3 getPos() {
 	return pos;
@@ -17,13 +18,17 @@ public:
     bool isGrounded() { return grounded; }
     bool hasGlobalAcceleration = true;
     float frictionCoeff = 0.005f;
-    float bounceCoeff = 1.1f;
+    float bounceCoeff = 1.2f;
  protected:
     glm::vec3 pos = glm::vec3(0);
     glm::vec3 prevPos = glm::vec3(0);
     glm::vec3 velocity = glm::vec3(0);
     glm::vec3 acceleration = glm::vec3(0);
+
+    /// collision
     bool grounded = true;
+    glm::vec3 collisionN;
+    glm::vec3 collisionT;
 };
 
 class Sphere : public PhysObj {
@@ -32,8 +37,10 @@ public:
     void Update(long long dt) override;
     float radius;
 
-protected:
-    glm::vec2 spin = glm::vec2(0);
+   
+    //protected:
+    glm::vec3 spinAxis = glm::vec3(0);
+    glm::vec3 addSpin = glm::vec3(0);
 };
 
 class PhysicsManager  {

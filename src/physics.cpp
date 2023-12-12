@@ -8,20 +8,24 @@ void PhysObj::addAcceleration(glm::vec3 acceleration) {
     this->acceleration += acceleration;
 }
 
+void PhysObj::addVelocity(glm::vec3 velocity) {
+    this->velocity += velocity;
+}
+
 void Sphere::worldCollision(World *world) {
     grounded = false;
     glm::vec3 np = world->nearestPoint(pos);
-    glm::vec3 dir = np - pos;
+    glm::vec3 dir = pos - np;
     bool insideShape = world->checkCollision(pos);
+    addSpin = glm::vec3(0);
     if(insideShape || glm::dot(dir, dir) < radius*radius) {
 	grounded = true;
-	glm::vec3 toSurf = glm::normalize(dir);
-	glm::vec3 collisionN = toSurf;
-	if(!insideShape) {
+	collisionN = glm::normalize(dir);
+	if(insideShape) { // always pointing away from surface even if inside shape
 	    collisionN *= -1;
 	}
 	// push sphere out of surface
-	pos += dir + collisionN;
+	pos += radius*collisionN - dir;
 
 	//bounce
 	glm::vec3 bounce = glm::dot(-collisionN, velocity)*collisionN;
@@ -29,16 +33,26 @@ void Sphere::worldCollision(World *world) {
 
 	//friction
 	glm::vec3 side = glm::normalize(glm::cross(velocity, -collisionN));
-	glm::vec3 collisionT = glm::cross(-collisionN, side);
-	glm::vec3 friction = glm::dot(-collisionT, velocity)*collisionT;
-	velocity += friction*frictionCoeff;
+	collisionT = glm::cross(-collisionN, side); // mag = 1
+	float tangentSpeed = glm::dot(collisionT, velocity);
+	glm::vec3 friction = tangentSpeed*collisionT;
+	velocity -= friction*frictionCoeff;
 
 	//spin
-	//TODO
+	spinAxis += 0.01f*tangentSpeed*glm::cross(collisionT, collisionN);
+	glm::vec3 spinDir = glm::cross(collisionN, spinAxis);
+	float spinSpeed = glm::length(spinDir);
+	float speedInDirOfSpin = glm::dot(spinDir, velocity);
+	addSpin = 0.1f*(spinSpeed - speedInDirOfSpin)*glm::cross(collisionN, spinAxis);
     }
 }
 
 void Sphere::Update(long long dt) {
+    if(grounded) {
+	velocity += (float)dt*addSpin*0.01f;
+    } else {
+	spinAxis *= 0.99f;
+    }
     PhysObj::Update(dt);
 }
 
@@ -58,7 +72,7 @@ void PhysObj::Update(long long dt) {
 /// --- Physics Manager ---
 
 PhysicsManager::PhysicsManager(World *world) {
-    this->globalAcceleration = glm::vec3(0, 0, -0.0001);
+    this->globalAcceleration = glm::vec3(0, 0, -0.00005);
     this->world = world;
 }
 

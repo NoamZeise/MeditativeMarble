@@ -55,10 +55,10 @@ void Player::Update(Input &input, Timer &timer,
 	acceleration += speed * left;
     if(input.kb.hold(GLFW_KEY_D))
 	acceleration -= speed * left;
-    if(input.kb.hold(GLFW_KEY_SPACE))
-	acceleration.z += speed;
-    if(input.kb.hold(GLFW_KEY_LEFT_SHIFT))
-	acceleration.z -= speed;
+    if(input.kb.hold(GLFW_KEY_SPACE) && isGrounded())
+	PhysObj::addVelocity(collisionN * 0.1f);
+    if(input.kb.hold(GLFW_KEY_LEFT_SHIFT) && !isGrounded())
+	acceleration.z -= 0.005f;
     setAcceleration(acceleration);
 }
 

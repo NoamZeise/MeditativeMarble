@@ -40,9 +40,18 @@ void addNormal(glm::vec3 &prevNorm, glm::vec3 newNorm) {
     }
 }
 
+
+ModelInfo::Vertex makeVert(std::function<glm::vec3(float, float)> surfaceFn,
+			   float x, float y, float uvDensity) {
+    ModelInfo::Vertex v;
+    v.Position = surfaceFn(x, y);
+    v.TexCoord = glm::vec2(x / uvDensity, y / uvDensity);
+    return v;
+}
+
 ModelInfo::Model genSurface(
 	std::function<glm::vec3(float, float)> surfaceFn,
-	bool smoothShading,
+	bool smoothShading, float uvDensity,
 	SurfaceParam var1, SurfaceParam var2) {
     ModelInfo::Model model;
     ModelInfo::Mesh m;
@@ -55,9 +64,8 @@ ModelInfo::Model genSurface(
 	    int i1, i2, i3, i4;
 	    
 	    if((i == 0 && j == 0) || !smoothShading) {
-		m.verticies.push_back(ModelInfo::Vertex());
+		m.verticies.push_back(makeVert(surfaceFn, x, y, uvDensity));
 		i1 = m.verticies.size() - 1;
-		m.verticies[i1].Position = surfaceFn(x,y);
 	    } else {
 		if(i == 0) { 
 		    i1 = m.indices[quadvi(i, j-1  , width, 2)];
@@ -69,24 +77,21 @@ ModelInfo::Model genSurface(
 	    }
 	    
 	    if(i==0 || !smoothShading) {
-		m.verticies.push_back(ModelInfo::Vertex());
+		m.verticies.push_back(makeVert(surfaceFn, x, y+var2.step, uvDensity));
 		i2 = m.verticies.size() - 1;
-		m.verticies[i2].Position = surfaceFn(x,y+var2.step);
 	    } else {
 		i2 = m.indices[quadvi(i-1,j,width,4)];
 	    }
 	    
 	    if(j==0 || !smoothShading) {
-		m.verticies.push_back(ModelInfo::Vertex());
+		m.verticies.push_back(makeVert(surfaceFn, x+var1.step, y, uvDensity));
 		i3 = m.verticies.size() - 1;
-		m.verticies[i3].Position = surfaceFn(x+var1.step,y);	
 	    } else {
 		i3 = m.indices[quadvi(i, j-1, width, 4)];
 	    }
 
-	    m.verticies.push_back(ModelInfo::Vertex());
+	    m.verticies.push_back(makeVert(surfaceFn, x+var1.step, y+var2.step, uvDensity));
 	    i4 = m.verticies.size() - 1;
-	    m.verticies[i4].Position = surfaceFn(x+var1.step,y+var2.step);
 
 	    glm::vec3 v1(m.verticies[i1].Position),
 		v2(m.verticies[i2].Position),
@@ -133,25 +138,4 @@ ModelInfo::Model genSurface(
     m.diffuseColour = glm::vec4(1);
     model.meshes = {m};
     return model;
-}
-
-glm::vec3 sphere(float theta, float phi) {
-    float rad = 5;
-    return {
-	rad*sin(theta)*cos(phi),
-	rad*sin(theta)*sin(phi),
-    	rad*cos(theta)};
-}
-
-ModelInfo::Model genSphere() {
-    return genSurface(sphere, false, {0, PI, 0.04f*PI}, {0, 2*PI, 0.02f*PI});
-}
-
-glm::vec3 land(float x, float y) {
-    return glm::vec3(x, y, sin(0.1*x)*cos(0.3*y)*2 - 4);
-}
-
-glm::vec3 noise_land(float x, float y) {
-    float i[3] = {x*0.035f, y*0.032f, 6.0f};
-    return glm::vec3(x, y, noise::simplex<3>(i)*4 - 5);
 }

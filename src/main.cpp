@@ -69,7 +69,9 @@ int main(int argc, char** argv) {
 	    world.Draw(manager.render);
 	    debug::draw(manager.render, 30, "update", updateStats);
 	    debug::draw(manager.render, 50, "draw", drawStats);
-	    debug::draw(manager.render, 80, "velocity", player.getVel());
+	    debug::draw(manager.render, 70, "velocity", player.getVel());
+	    DEBUG_DRAW(manager.render, 90, player.spinAxis);
+	    DEBUG_DRAW(manager.render, 110, player.addSpin);
 	    std::atomic<bool> drawSubmitted;
 	    manager.render->EndDraw(drawSubmitted);
 	    drawStats = std::to_string(

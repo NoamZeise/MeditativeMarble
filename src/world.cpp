@@ -5,17 +5,20 @@
 
 glm::vec3 surfaceFn(float x, float y) {
     float i[] = {x*0.004f, y*0.004f, 0};
-    return glm::vec3(x, y, (noise::simplex<3>(i) * 40 - 100));
+    //return glm::vec3(x, y, (noise::simplex<3>(i) * 40 - 100));
     // return glm::vec3(x, y, (sin(x*0.01) + cos(y*0.01))*100 - 120);
+    //return glm::vec3(x, y, (x*x + y*y)*0.0005 - 100);
+    return glm::vec3(x, y, 50.0f*(sin(0.02f*x) - cos(0.02f*y)) - 80);
 }
 
 
 World::World(ModelLoader *loader) {
     ModelInfo::Model gennedModelInfo = genSurface(
-	    surfaceFn, true,
-	    {-500.0f, 500.0f, 4.0f},
-	    {-500.0f, 500.0f, 4.0f});
-    gennedModelInfo.meshes.back().diffuseColour = glm::vec4(0.3, 0.5, 0.2, 1);
+	    surfaceFn, true, 10.0f,
+	    {-500.0f, 500.0f, 5.0f},
+	    {-500.0f, 500.0f, 5.0f});
+    //gennedModelInfo.meshes.back().diffuseColour = glm::vec4(0.3, 0.5, 0.2, 1);
+    gennedModelInfo.meshes.back().diffuseTextures = { "terrian_tex.png"};
     model = loader->load(gennedModelInfo);
 }
 
