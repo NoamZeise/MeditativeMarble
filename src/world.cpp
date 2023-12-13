@@ -8,8 +8,8 @@ glm::vec3 surfaceFn(float x, float y) {
     //return glm::vec3(x, y, (noise::simplex<3>(i) * 40 - 100));
     // return glm::vec3(x, y, (sin(x*0.01) + cos(y*0.01))*100 - 120);
     //return glm::vec3(x, y, (x*x + y*y)*0.0005 - 100);
-    //return glm::vec3(x, y, 50.0f*(sin(0.02f*x) - cos(0.02f*y)) - 80);
-    return glm::vec3(x, y, -10-y*0.2);
+    return glm::vec3(x, y, 50.0f*(sin(0.02f*x) - cos(0.02f*y)) - 80);
+    //return glm::vec3(x, y, -10 + y);
 }
 
 
@@ -49,17 +49,16 @@ glm::vec3 World::nearestPoint(glm::vec3 pos) {
     float a = pos.x; // intial guess for a,b
     float b = pos.y;
     float h = 0.1f;
-    float step = 0.01f;
+    float step = 0.1f;
     const int ITERS = 10;
     for(int i = 0; i < ITERS; i++) {
 	// calc del(d2(a, b))
-	float r = d2(a, b);
 	float ra = d2(a + h, b);
 	float rb = d2(a, b + h);
 	float ram = d2(a - h, b);
 	float rbm = d2(a, b - h);
-	float da = (ra - ram)/(h*2);
-	float db = (rb - rbm)/(h*2);
+	float da = (ra - ram)/(h);
+	float db = (rb - rbm)/(h);
 	a -= step*da;
 	b -= step*db;
     }

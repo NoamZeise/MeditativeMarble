@@ -22,47 +22,41 @@ void print_vec3(glm::vec3 v, std::string name) {
 void Sphere::worldCollision(World *world) {
     grounded = false;
     glm::vec3 np = world->nearestPoint(pos);
-    //print_vec3(pos, "pos");
-    // print_vec3(np, "np");
     glm::vec3 dir = pos - np;
+    if(dir != glm::vec3(0)) {
+	collisionN = glm::normalize(dir);
+	glm::vec3 side = glm::cross(velocity, -collisionN);	
+	collisionT = glm::cross(-collisionN, side);
+    }
     bool insideShape = world->checkCollision(pos);
     if(insideShape || glm::dot(dir, dir) < radius*radius) {
 	//glm::vec3 vel = velocity;
 	grounded = true;
-	collisionN = glm::normalize(dir);
+	if(dir != glm::vec3(0)) {
+	    collisionN = glm::normalize(dir);
+	}
 	if(insideShape) { // always pointing away from surface even if inside shape
 	    collisionN *= -1;
 	}
 	// push sphere out of surface
-	pos += radius*collisionN - dir;
-
-	//	print_vec3(velocity, "vel");
-	//print_vec3(collisionN, "N");
-		
+	pos += radius*collisionN - dir;		
 	//bounce
 	glm::vec3 bounce = glm::dot(-collisionN, velocity)*collisionN;
-	//LOG("vel in surface amount: " << glm::dot(-collisionN, velocity));
-	//print_vec3(bounce*bounceCoeff, "adding bounce");
 	velocity += bounce*bounceCoeff;
-	LOG("vel in surface amount: " << glm::dot(-collisionN, velocity) << std::endl);
-
-	//friction
 	
+	//friction	
 	glm::vec3 side = glm::cross(velocity, -collisionN);
 	if(side != glm::vec3(0)) {
 	    side = glm::normalize(side);
 	}
-	//	print_vec3(side, "side");
 	collisionT = glm::cross(-collisionN, side);
-	//	print_vec3(collisionT, "T");
 	float tangentSpeed = glm::dot(collisionT, velocity);
 	glm::vec3 friction = tangentSpeed*collisionT;
 	velocity -= friction*frictionCoeff;
 
 	//spin
 	glm::vec3 BN = glm::cross(collisionT, collisionN);
-		spinAxis = 0.5f*(spinAxis + frictionCoeff*tangentSpeed*BN);
-	//	LOG("tanspeed: " << tangentSpeed);
+	spinAxis = 0.5f*(spinAxis + frictionCoeff*tangentSpeed*BN);
     }
 }
 
@@ -74,13 +68,12 @@ void Sphere::Update(long long dt) {
 	float diff = spinSpeed - speed;
 	if(spinSpeed > speed) {
 	    velocity += (float)dt*diff*spinDir;
-	    // print_vec3((float)dt*diff*spinDir, "adding spin");
 	} else if(spinSpeed != 0) {
 	    spinDir *= 1 - (0.1f*dt)*diff;
 	}
     } else {
 	spinAxis *= 1 - (0.01f*dt);
-	}
+    }
     PhysObj::Update(dt);
 }
 

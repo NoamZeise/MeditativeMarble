@@ -16,7 +16,7 @@ class Obj3D {
     void setScale(glm::vec3 scale);
     glm::vec3 getScale() { return scale; }
     void setColour(glm::vec4 colour);
- private:
+protected: //private:
     void updateMat();
     glm::vec3 modelPos = glm::vec3(0, 0, 0);
     glm::vec3 scale = glm::vec3(1, 1, 1);
