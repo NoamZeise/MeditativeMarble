@@ -8,17 +8,26 @@ void PhysObj::addAcceleration(glm::vec3 acceleration) {
     this->acceleration += acceleration;
 }
 
-void PhysObj::addVelocity(glm::vec3 velocity) {
-    this->velocity += velocity;
+void PhysObj::addVelocity(glm::vec3 velocity) { this->velocity += velocity; }
+
+
+#include <graphics/logger.h>
+
+void print_vec3(glm::vec3 v, std::string name) {
+    LOG(name << ".x: " << v.x << "  " <<
+	name << ".y: " << v.y << "  " <<
+	name << ".z: " << v.z);
 }
 
 void Sphere::worldCollision(World *world) {
     grounded = false;
     glm::vec3 np = world->nearestPoint(pos);
+    //print_vec3(pos, "pos");
+    // print_vec3(np, "np");
     glm::vec3 dir = pos - np;
     bool insideShape = world->checkCollision(pos);
-    addSpin = glm::vec3(0);
     if(insideShape || glm::dot(dir, dir) < radius*radius) {
+	//glm::vec3 vel = velocity;
 	grounded = true;
 	collisionN = glm::normalize(dir);
 	if(insideShape) { // always pointing away from surface even if inside shape
@@ -27,32 +36,51 @@ void Sphere::worldCollision(World *world) {
 	// push sphere out of surface
 	pos += radius*collisionN - dir;
 
+	//	print_vec3(velocity, "vel");
+	//print_vec3(collisionN, "N");
+		
 	//bounce
 	glm::vec3 bounce = glm::dot(-collisionN, velocity)*collisionN;
+	//LOG("vel in surface amount: " << glm::dot(-collisionN, velocity));
+	//print_vec3(bounce*bounceCoeff, "adding bounce");
 	velocity += bounce*bounceCoeff;
+	LOG("vel in surface amount: " << glm::dot(-collisionN, velocity) << std::endl);
 
 	//friction
-	glm::vec3 side = glm::normalize(glm::cross(velocity, -collisionN));
-	collisionT = glm::cross(-collisionN, side); // mag = 1
+	
+	glm::vec3 side = glm::cross(velocity, -collisionN);
+	if(side != glm::vec3(0)) {
+	    side = glm::normalize(side);
+	}
+	//	print_vec3(side, "side");
+	collisionT = glm::cross(-collisionN, side);
+	//	print_vec3(collisionT, "T");
 	float tangentSpeed = glm::dot(collisionT, velocity);
 	glm::vec3 friction = tangentSpeed*collisionT;
 	velocity -= friction*frictionCoeff;
 
 	//spin
-	spinAxis += 0.01f*tangentSpeed*glm::cross(collisionT, collisionN);
-	glm::vec3 spinDir = glm::cross(collisionN, spinAxis);
-	float spinSpeed = glm::length(spinDir);
-	float speedInDirOfSpin = glm::dot(spinDir, velocity);
-	addSpin = 0.1f*(spinSpeed - speedInDirOfSpin)*glm::cross(collisionN, spinAxis);
+	glm::vec3 BN = glm::cross(collisionT, collisionN);
+		spinAxis = 0.5f*(spinAxis + frictionCoeff*tangentSpeed*BN);
+	//	LOG("tanspeed: " << tangentSpeed);
     }
 }
 
 void Sphere::Update(long long dt) {
-    if(grounded) {
-	velocity += (float)dt*addSpin*0.01f;
+    if(isGrounded()) {
+	glm::vec3 spinDir = glm::cross(collisionN, spinAxis);
+	float speed = glm::dot(spinDir, velocity);
+	float spinSpeed = glm::length(spinDir);
+	float diff = spinSpeed - speed;
+	if(spinSpeed > speed) {
+	    velocity += (float)dt*diff*spinDir;
+	    // print_vec3((float)dt*diff*spinDir, "adding spin");
+	} else if(spinSpeed != 0) {
+	    spinDir *= 1 - (0.1f*dt)*diff;
+	}
     } else {
-	spinAxis *= 0.99f;
-    }
+	spinAxis *= 1 - (0.01f*dt);
+	}
     PhysObj::Update(dt);
 }
 
