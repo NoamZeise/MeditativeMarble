@@ -11,6 +11,8 @@ class ThirdPersonCam {
     void setTarget(glm::vec3 target, float radius);
     glm::mat4 getView() { return view; }
     glm::vec3 getPos() { return worldPos; }
+    void setTempRadius(float r);
+    void setPos(glm::vec3 pos);
     glm::vec3 getLocalPos() { return pos; }
     void setWorldUp(glm::vec3 worldUp);
     glm::vec3 getWorldUp() { return worldUp; }

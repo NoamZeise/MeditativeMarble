@@ -20,6 +20,17 @@ void ThirdPersonCam::setTarget(glm::vec3 target, float radius) {
     updateView();
 }
 
+void ThirdPersonCam::setTempRadius(float r) {
+    float trad = radius;
+    radius = r;
+    updateView();
+    radius = trad;
+}
+
+void ThirdPersonCam::setPos(glm::vec3 pos) {
+    this->pos = pos;
+}
+
 void ThirdPersonCam::control(Input &input, double dt) {
     glm::vec2 ctrlDir(-input.m.dx(), -input.m.dy());
     ctrlDir *= mouseSensitivity;
@@ -30,8 +41,8 @@ void ThirdPersonCam::control(Input &input, double dt) {
 	float size = 0.001 * dt;
 	ctrlDir *= size/2;
 	auto qx = glm::quat(cos(ctrlDir.x), (float)sin(ctrlDir.x)*up);
-	auto qy = glm::quat(cos(ctrlDir.y), (float)sin(ctrlDir.y)*left);
-	auto q = qx * qy;
+	//auto qy = glm::quat(cos(ctrlDir.y), (float)sin(ctrlDir.y)*left);
+	auto q = qx;// * qy;
 	auto c = glm::conjugate(q);
 	pos = q * pos * c;
     }

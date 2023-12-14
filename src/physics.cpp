@@ -25,12 +25,11 @@ void Sphere::worldCollision(World *world) {
     glm::vec3 dir = pos - np;
     if(dir != glm::vec3(0)) {
 	collisionN = glm::normalize(dir);
-	glm::vec3 side = glm::cross(velocity, -collisionN);	
+	glm::vec3 side = glm::cross(velocity, -collisionN);
 	collisionT = glm::cross(-collisionN, side);
     }
     bool insideShape = world->checkCollision(pos);
     if(insideShape || glm::dot(dir, dir) < radius*radius) {
-	//glm::vec3 vel = velocity;
 	grounded = true;
 	if(dir != glm::vec3(0)) {
 	    collisionN = glm::normalize(dir);
@@ -39,12 +38,13 @@ void Sphere::worldCollision(World *world) {
 	    collisionN *= -1;
 	}
 	// push sphere out of surface
-	pos += radius*collisionN - dir;		
+	pos += radius*collisionN - dir;
+
 	//bounce
 	glm::vec3 bounce = glm::dot(-collisionN, velocity)*collisionN;
 	velocity += bounce*bounceCoeff;
 	
-	//friction	
+	//friction
 	glm::vec3 side = glm::cross(velocity, -collisionN);
 	if(side != glm::vec3(0)) {
 	    side = glm::normalize(side);

@@ -14,13 +14,17 @@ struct Chunk {
 
 class World {
  public:
-    World(ModelLoader *loader);
+    World(Render* render);
     bool checkCollision(glm::vec3 pos);
     glm::vec3 nearestPoint(glm::vec3 pos);
-    void Update(ResourcePool* pool, glm::vec3 playerPos);
+    float nearestPointToEnd(glm::vec3 start, glm::vec3 end);
+    void Update(glm::vec3 playerPos);
     void Draw(Render* render);
  private:
     Resource::Model model;
+    ResourcePool* activePool;
+    ResourcePool* inactivePool;
+    Render* render;
     std::vector<Chunk> chunks;
 };
 

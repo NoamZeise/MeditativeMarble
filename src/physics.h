@@ -17,8 +17,8 @@ public:
     virtual void worldCollision(World* world) = 0;
     bool isGrounded() { return grounded; }
     bool hasGlobalAcceleration = true;
-    float frictionCoeff = 0.001f;
-    float bounceCoeff = 1.00f;
+    float frictionCoeff = 0.002f;
+    float bounceCoeff = 1.50f;
  protected:
     glm::vec3 pos = glm::vec3(0);
     glm::vec3 prevPos = glm::vec3(0);
@@ -36,9 +36,7 @@ public:
     void worldCollision(World* world) override;
     void Update(long long dt) override;
     float radius;
-
-   
-    //protected:
+protected:
     glm::vec3 spinAxis = glm::vec3(0);
 };
 
