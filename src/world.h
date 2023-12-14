@@ -5,11 +5,13 @@
 #include <graphics/model_loader.h>
 
 #include <vector>
+#include <thread>
 
 struct Chunk {
     Resource::Model model;
-    ModelInfo::Model data;
     glm::vec4 rect;
+    bool inGpu = false;
+    bool inInactive = false;
 };
 
 class World {
@@ -20,12 +22,23 @@ class World {
     float nearestPointToEnd(glm::vec3 start, glm::vec3 end);
     void Update(glm::vec3 playerPos);
     void Draw(Render* render);
+    bool recreationRequired() {
+	bool r = recreate;
+	recreate = false;
+	return r;
+    }
  private:
-    Resource::Model model;
+    void loadChunksToGPU();
+
+    bool recreate = false;
     ResourcePool* activePool;
     ResourcePool* inactivePool;
     Render* render;
     std::vector<Chunk> chunks;
+
+    bool threadActive = false;
+    std::atomic<bool> loadingFinished;
+    std::thread loadingThread;
 };
 
 #endif /* WORLD_H */

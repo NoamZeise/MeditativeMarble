@@ -18,7 +18,7 @@ public:
     bool isGrounded() { return grounded; }
     bool hasGlobalAcceleration = true;
     float frictionCoeff = 0.002f;
-    float bounceCoeff = 1.50f;
+    float bounceCoeff = 1.00f;
  protected:
     glm::vec3 pos = glm::vec3(0);
     glm::vec3 prevPos = glm::vec3(0);
@@ -40,11 +40,14 @@ protected:
     glm::vec3 spinAxis = glm::vec3(0);
 };
 
+const float INITAL_CAM_RAD = 20.0f;
+
 class PhysicsManager  {
 public:
     PhysicsManager(World *world);
     void Update(long long dt);
     void addPhysObj(PhysObj* obj);
+    glm::vec3 fixCamPos(glm::vec3 localCamPos, float *camRad, glm::vec3 targetPos, glm::vec3 targetVel);
 private:
     World* world;
     std::vector<PhysObj*> objs;

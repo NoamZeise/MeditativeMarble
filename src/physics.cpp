@@ -111,3 +111,42 @@ void PhysicsManager::Update(long long dt) {
 	obj->worldCollision(world);
     }
 }
+
+glm::vec3 PhysicsManager::fixCamPos(glm::vec3 localCamPos, float *camRad, glm::vec3 targetPos, glm::vec3 targetVel) {
+    targetVel.z = 0;
+    float mod = glm::length(targetVel)*100.0f;
+    if(mod < INITAL_CAM_RAD)
+	mod = INITAL_CAM_RAD;
+    float change = *camRad - mod;
+    *camRad = (*camRad + mod)*0.5f;
+    targetVel.z = -0.01;
+    glm::vec3 cp = -targetVel + localCamPos;
+    if(cp != glm::vec3(0)) {
+	cp = glm::normalize(cp);
+	glm::vec3 camPos = cp * *camRad + targetPos;
+	glm::vec3 np = world->nearestPoint(camPos);
+	glm::vec3 n = camPos - np;
+	float d = n.z;
+	const float CAM_FROM_SURFACE = 4.0f;
+	if(d < CAM_FROM_SURFACE && n != glm::vec3(0)) {
+	    glm::normalize(n);
+	    if(d < 0) {
+		n *= -1.0f;
+		d = 0;
+	    }
+	    glm::vec3 newWorldPos = camPos
+		+ (float)(fabs(d - CAM_FROM_SURFACE))*n;
+	    float t = (CAM_FROM_SURFACE - d)/CAM_FROM_SURFACE;
+	    glm::vec3 mid = camPos +
+		(t)*(newWorldPos - camPos);
+	    cp = (1 / *camRad)*(mid - targetPos);
+	    if(cp != glm::vec3(0))
+		cp = glm::normalize(cp);
+	    else
+		cp = glm::vec3(0, 0, 1);
+	}	        
+    } else {
+	cp = glm::vec3(0, 0, 1);
+    }
+    return cp;
+}

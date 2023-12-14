@@ -58,6 +58,7 @@ ModelInfo::Model genSurface(
     
     int i = 0;
     int width = (var2.end - var2.start) / var2.step;
+    LOG("x: " << var1.start << " y: " << var2.start);
     for(float x = var1.start; x < var1.end; x+=var1.step, i++) {
 	int j = 0;
 	for(float y = var2.start; y < var2.end; y+=var2.step, j++) {
