@@ -119,7 +119,8 @@ glm::vec3 PhysicsManager::fixCamPos(glm::vec3 localCamPos, float *camRad, glm::v
 	mod = INITAL_CAM_RAD;
     float change = *camRad - mod;
     *camRad = (*camRad + mod)*0.5f;
-    targetVel.z = -0.01;
+    if(glm::dot(targetVel, targetVel) > 0.1)
+	targetVel.z = -0.01;
     glm::vec3 cp = -targetVel + localCamPos;
     if(cp != glm::vec3(0)) {
 	cp = glm::normalize(cp);

@@ -47,13 +47,13 @@ void Player::Update(Input &input, Timer &timer,
     Obj3D::setPos(PhysObj::getPos());
     
     glm::vec3 acceleration(0);
-    if(input.kb.hold(GLFW_KEY_W))
+    if(input.kb.hold(GLFW_KEY_W) || input.kb.hold(GLFW_KEY_UP))
 	acceleration += speed * forward;
-    if(input.kb.hold(GLFW_KEY_S))
+    if(input.kb.hold(GLFW_KEY_S) || input.kb.hold(GLFW_KEY_DOWN))
 	acceleration -= speed * forward;
-    if(input.kb.hold(GLFW_KEY_A))
+    if(input.kb.hold(GLFW_KEY_A) || input.kb.hold(GLFW_KEY_LEFT))
 	acceleration += speed * left;
-    if(input.kb.hold(GLFW_KEY_D))
+    if(input.kb.hold(GLFW_KEY_D) || input.kb.hold(GLFW_KEY_RIGHT))
 	acceleration -= speed * left;
     if(input.kb.hold(GLFW_KEY_SPACE) && isGrounded())
 	PhysObj::addVelocity(collisionN * 0.1f);

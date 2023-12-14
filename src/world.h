@@ -9,7 +9,6 @@
 
 struct Chunk {
     Resource::Model model;
-    glm::vec4 rect;
     bool inGpu = false;
     bool inInactive = false;
 };
@@ -28,12 +27,16 @@ class World {
 	return r;
     }
  private:
+
+    void loadChunkAtPoint(glm::vec3 pos);
     void loadChunksToGPU();
 
     bool recreate = false;
     ResourcePool* activePool;
     ResourcePool* inactivePool;
     Render* render;
+    glm::vec4 mainChunk;
+    glm::vec4 loadBarrier;
     std::vector<Chunk> chunks;
 
     bool threadActive = false;
