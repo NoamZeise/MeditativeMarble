@@ -18,7 +18,7 @@ public:
     bool isGrounded() { return grounded; }
     bool hasGlobalAcceleration = true;
     float frictionCoeff = 0.002f;
-    float bounceCoeff = 1.00f;
+    float bounceCoeff = 1.05f;
  protected:
     glm::vec3 pos = glm::vec3(0);
     glm::vec3 prevPos = glm::vec3(0);
@@ -29,6 +29,7 @@ public:
     bool grounded = true;
     glm::vec3 collisionN;
     glm::vec3 collisionT;
+    float terminalVel = 0.1f;
 };
 
 class Sphere : public PhysObj {
@@ -51,7 +52,7 @@ public:
 private:
     World* world;
     std::vector<PhysObj*> objs;
-    glm::vec3 globalAcceleration;
+    glm::vec3 globalAcceleration = glm::vec3(0, 0, -0.00005);
 };
 
 #endif /* PHYSICS_H */

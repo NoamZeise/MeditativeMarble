@@ -18,6 +18,7 @@ int main(int argc, char** argv) {
     state.conf.multisampling = true;
     state.conf.sample_shading = true;
     state.conf.depth_range_3D[1] = 10000.0f;
+    
     if(argc > 1) {
 	if(std::string(argv[1]) == "opengl")
 	    state.defaultRenderer = RenderFramework::OpenGL;
@@ -52,13 +53,12 @@ int main(int argc, char** argv) {
 	    glfwSetWindowShouldClose(manager.window, GLFW_TRUE);
 
 	player.Update(manager.input, manager.timer, cam.getTargetForward(), cam.getTargetLeft());
-	world.Update(player.PhysObj::getPos());
+	world.Update(player.PhysObj::getPos(), player.getVel());
 	if(world.recreationRequired())
 	    manager.render->UseLoadedResources();
 	pm.Update(manager.timer.dt());
 
 	cam.control(manager.input, manager.timer.dt());
-	//	camRad += -0.04*manager.timer.dt() * manager.input.m.scroll();
 	cam.setPos(pm.fixCamPos(cam.getLocalPos(), &camRad, player.PhysObj::getPos(),
 				      player.PhysObj::getVel()));
 	//manager.fov = 45.0f + (camRad - INITAL_CAM_RAD)/50.0f;
@@ -76,6 +76,7 @@ int main(int argc, char** argv) {
 	    debug::draw(manager.render, 30, "update", updateStats);
 	    debug::draw(manager.render, 50, "draw", drawStats);
 	    debug::draw(manager.render, 70, "pos", player.PhysObj::getPos());
+	    debug::draw(manager.render, 90, "vel", player.PhysObj::getVel());
 	    std::atomic<bool> drawSubmitted;
 	    manager.render->EndDraw(drawSubmitted);
 	    drawStats = std::to_string(

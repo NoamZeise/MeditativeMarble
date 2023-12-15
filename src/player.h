@@ -35,7 +35,7 @@ class Player : public Obj3D, public Sphere {
 		glm::vec3 forward, glm::vec3 left);
     void Draw(Render* render) override;
  private:
-    float speed = 0.0001;
+    float speed = 0.00003;
 };
 
 #endif /* PLAYER_H */

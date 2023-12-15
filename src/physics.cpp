@@ -83,6 +83,8 @@ void PhysObj::Update(long long dt) {
 	    acceleration.x * dt,
 	    acceleration.y * dt,
 	    acceleration.z * dt);
+    if(glm::dot(velocity, velocity) > terminalVel)
+	velocity *=0.99;
     pos += glm::vec3(
 	    velocity.x * dt,
 	    velocity.y * dt,
@@ -93,7 +95,6 @@ void PhysObj::Update(long long dt) {
 /// --- Physics Manager ---
 
 PhysicsManager::PhysicsManager(World *world) {
-    this->globalAcceleration = glm::vec3(0, 0, -0.00005);
     this->world = world;
 }
 

@@ -3,14 +3,13 @@
 #include "model_gen.h"
 #include "noise.h"
 #include <graphics/logger.h>
+#include <chrono>
 
 glm::vec3 surfaceFn(float x, float y) {
-    float i[] = {x*0.004f, y*0.004f, 0};
-    return glm::vec3(x, y, (noise::simplex<3>(i) * 60 - 100));
-    //return glm::vec3(x, y, -5);
-    //return glm::vec3(x, y, (sin(x*0.01) + cos(y*0.01))*100 - 120);
-    //return glm::vec3(x, y, 50.0f*(sin(0.02f*x) - cos(0.02f*y)) - 80);
-    //return glm::vec3(x, y, -pow((cos(x*0.01)*cos(x*0.01) + cos(y*0.01)*cos(y*0.01)), 2) * 50 - 100);
+    float i[] = {x*0.003f, y*0.003f, 0};
+    float i2[] = {x*0.0005f, y*0.0005f, 10};
+    return glm::vec3(x, y, (noise::simplex<3>(i) * 50 +
+			    noise::simplex<3>(i2)*200) - 300);
 }
 
 
@@ -18,25 +17,26 @@ World::World(Render *render) {
     this->render = render;
     activePool = render->CreateResourcePool();
     inactivePool = render->CreateResourcePool();
-    
-    ModelInfo::Model gennedModelInfo = genSurface(
-	    surfaceFn, true, 10.0f,
-	    {-500.0f, 500.0f, 5.0f},
-	    {-500.0f, 500.0f, 5.0f});
-    //gennedModelInfo.meshes.back().diffuseColour = glm::vec4(0.3, 0.5, 0.2, 1);
-    gennedModelInfo.meshes.back().diffuseTextures = { "terrian_tex.png"};
-    loadChunkAtPoint(glm::vec3(0));
+    auto start = std::chrono::high_resolution_clock::now();
+    createBuffered(glm::vec3(0));
+    useBuffered(bufferedChunks[0]);
     loadChunksToGPU();
+    switchPools();
+    loadTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+	    std::chrono::high_resolution_clock::now() - start).count();
+}
+
+World::~World() {
+    if(threadActive)
+	loadingThread.join();
 }
 
 void World::loadChunksToGPU() {
-    auto t = activePool;
-    activePool = inactivePool;
-    inactivePool = t;
-    render->LoadResourcesToGPU(activePool);
+    render->LoadResourcesToGPU(inactivePool);
     for(int i = 0; i < chunks.size(); i++) {
 	if(!chunks[i].inGpu) {
 	    chunks[i].inGpu = true;
+	    chunks[i].pool = inactivePool->id();
 	}
 	else if(!chunks[i].inInactive) {
 	    chunks[i].inInactive = true;
@@ -46,30 +46,37 @@ void World::loadChunksToGPU() {
     }
 }
 
+void World::switchPools() {
+    render->setResourcePoolInUse(activePool->id(), false);
+    render->setResourcePoolInUse(inactivePool->id(), true);
+    ResourcePool* temp = activePool;
+    activePool = inactivePool;
+    inactivePool = temp;
+}
+
 bool World::checkCollision(glm::vec3 pos) {
     return pos.z < surfaceFn(pos.x, pos.y).z;
 }
 
-const glm::vec2 CHUNK_SIZE(1000, 1000);
-const float SUB_CHUNK_SIZE = 1500.0f;
-const float MAIN_CHUNK_RESOLUTION = 5.0f;
+const glm::vec2 CHUNK_SIZE(1500, 1500);
+const float SUB_CHUNK_SIZE = 2000.0f;
+const float MAIN_CHUNK_RESOLUTION = 10.0f;
 const float SUB_CHUNK_RESOLUTION = 50.0f;
 const float LOD_OVERLAP = 15.0f;
 const float UV_DENSITY = 10.0f;
 
-void World::loadChunkAtPoint(glm::vec3 pos) {
+Buffered World::loadBufferedAtPoint(glm::vec3 pos) {
+    Buffered b;
+    LOG("loading chunk at x: " << pos.x << " y: " << pos.y);
     glm::vec4 chunkRect = glm::vec4(pos.x - CHUNK_SIZE.x/2,
 				    pos.y - CHUNK_SIZE.y/2,
 				    CHUNK_SIZE.x, CHUNK_SIZE.y);
-    ModelInfo::Model mainChunk = genSurface(
+    b.main.model = genSurface(
 	    surfaceFn, true, UV_DENSITY,
 	    {chunkRect.x, chunkRect.z + chunkRect.x, MAIN_CHUNK_RESOLUTION},
 	    {chunkRect.y, chunkRect.w + chunkRect.y, MAIN_CHUNK_RESOLUTION});
-    mainChunk.meshes.back().diffuseTextures = { "terrian_tex.png"};
-    chunks.push_back({
-	    inactivePool->model()->load(mainChunk),
-	});
-    ModelInfo::Model subChunks[4];
+    b.main.model.meshes.back().diffuseTextures = { "terrian_tex.png"};
+    b.main.rect = chunkRect;
     for(int i = 0; i < 4; i++) {
 	glm::vec4 subChunkRect = chunkRect;
 	switch(i) {
@@ -100,7 +107,7 @@ void World::loadChunkAtPoint(glm::vec3 pos) {
 	subChunkRect.y -= LOD_OVERLAP;
 	subChunkRect.z += LOD_OVERLAP;
 	subChunkRect.w += LOD_OVERLAP;
-	subChunks[i] = genSurface(
+	b.lowLod[i].model = genSurface(
 		[](float a, float b){
 		    auto v = surfaceFn(a, b);
 		    v.z -= 4.0f;
@@ -108,43 +115,90 @@ void World::loadChunkAtPoint(glm::vec3 pos) {
 		true, UV_DENSITY,
 		{subChunkRect.x, subChunkRect.z + subChunkRect.x, SUB_CHUNK_RESOLUTION},
 		{subChunkRect.y, subChunkRect.w + subChunkRect.y, SUB_CHUNK_RESOLUTION});
-	subChunks[i].meshes.back().diffuseTextures = { "terrian_tex.png"};
-	chunks.push_back({
-		inactivePool->model()->load(subChunks[i]),
-	    });
+	b.lowLod[i].model.meshes.back().diffuseTextures = { "terrian_tex.png"};
+	b.lowLod[i].rect = subChunkRect;
     }
-    loadBarrier = chunkRect;
-    loadBarrier.x += CHUNK_SIZE.x /4;
-    loadBarrier.y += CHUNK_SIZE.y /4;
-    loadBarrier.z = CHUNK_SIZE.x /2;
-    loadBarrier.w = CHUNK_SIZE.y /2;
+    b.loaded = true;
+    return b;
 }
 
-void World::Update(glm::vec3 playerPos) {
+void World::createBuffered(glm::vec3 pos) {
+    bufferedChunks[currentBc] = loadBufferedAtPoint(pos);
+    currentBc = (currentBc + 1) % BC_SIZE;
+}
+
+void World::useBuffered(Buffered b) {
+    mainRect = b.main.rect;
+    chunks.push_back({inactivePool->model()->load(b.main.model)});
+    for(int i = 0; i < 4; i++) {
+	chunks.push_back({inactivePool->model()->load(b.lowLod[i].model)});
+    }
+}
+
+void World::Update(glm::vec3 playerPos, glm::vec3 playerVel) {
     if(threadActive) {
 	if(loadingFinished) {
 	    loadingThread.join();
-	    loadChunksToGPU();
-	    recreate = true;
 	    threadActive = false;
-	} else {
-	    return;
-	}
+	} 
     }
-    if(loadBarrier.x > playerPos.x || loadBarrier.x + loadBarrier.z < playerPos.x
-       || loadBarrier.y > playerPos.y || loadBarrier.y + loadBarrier.w < playerPos.y) {
+    
+    if(!threadActive) {
 	threadActive = true;
 	loadingFinished = false;
-	loadingThread = std::thread([this, playerPos] {
-	    loadChunkAtPoint(playerPos);
+	loadingThread = std::thread([this, pos = playerPos + playerVel*loadTime] {
+	    auto start = std::chrono::high_resolution_clock::now();
+	    createBuffered(pos);
+	    loadTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+		    std::chrono::high_resolution_clock::now() - start).count();
 	    loadingFinished = true;
 	});
+    }
+    if(loadingChunk) {
+	if(useChunkLoaded) {
+	    useChunkThread.join();
+	    switchPools();
+	    loadingChunk = false;
+	    recreate = true;
+	}
+    }
+    else {
+	if(playerPos.x < mainRect.x + CHUNK_SIZE.x/4 ||
+	   playerPos.y < mainRect.y + CHUNK_SIZE.y/4 ||
+	   playerPos.x > mainRect.x + mainRect.z - CHUNK_SIZE.x/4 ||
+	   playerPos.y > mainRect.y + mainRect.w - CHUNK_SIZE.y/4) {
+	    int bestI = -1;
+	    float best = -1;
+	    for(int i = 0; i < BC_SIZE; i++) {
+		if(bufferedChunks[i].loaded) {
+		    glm::vec2 diff =
+			glm::vec2(playerPos.x, playerPos.y) -
+			glm::vec2(bufferedChunks[i].main.rect.x +
+				  bufferedChunks[i].main.rect.z/2,
+				  bufferedChunks[i].main.rect.y +
+				  bufferedChunks[i].main.rect.w/2);
+		    float d = glm::dot(diff, diff);
+		    if(best == -1 || d < best) {
+			best = d;
+			bestI = i;
+		    }
+		}
+	    }
+	    if(bestI != -1) {
+		loadingChunk = true;
+		useChunkThread = std::thread([this, b = bufferedChunks[bestI]]{
+		    useBuffered(b);
+		    loadChunksToGPU();
+		    useChunkLoaded = true;
+		});
+	    }
+	}
     }
 }
 
 void World::Draw(Render* render) {
     for(auto &c: chunks) {
-	if(c.inGpu && !c.inInactive) {
+	if(c.inGpu && c.pool.ID == activePool->id().ID) {
 	    render->DrawModel(
 		    c.model,
 		    glm::mat4(1.0f),
