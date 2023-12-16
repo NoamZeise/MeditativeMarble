@@ -17,17 +17,23 @@ void Obj3D::setScale(glm::vec3 scale) {
     updateMat();
 }
 
-void Obj3D::setColour(glm::vec4 colour) {
-    this->colour = colour;
+void Obj3D::setColour(glm::vec4 colour) { this->colour = colour; }
+
+void Obj3D::setRot(glm::vec3 axis, float angle) {
+    this->axis = axis;
+    this->angle = angle;
 }
 
 void Obj3D::updateMat() {
     modelMat =
+	glm::rotate(
 	glm::translate(
 		glm::scale(
 			glm::mat4(1.0f),
 			scale),
-		modelPos);
+		modelPos),
+	angle,
+	axis);
     normalMat = glm::inverseTranspose(modelMat);
 }
 
@@ -45,6 +51,10 @@ Player::Player(Resource::Model model) : Obj3D(model) {
 void Player::Update(Input &input, Timer &timer,
 		    glm::vec3 forward, glm::vec3 left) {
     Obj3D::setPos(PhysObj::getPos());
+    if(spinAxis != glm::vec3(0)) {
+	setRot(glm::normalize(-spinAxis), spinTime);
+	spinTime += 201.0f * timer.dt() * glm::length(spinAxis);
+    }
     
     glm::vec3 acceleration(0);
     if(input.kb.hold(GLFW_KEY_W) || input.kb.hold(GLFW_KEY_UP))
@@ -58,8 +68,8 @@ void Player::Update(Input &input, Timer &timer,
     if(input.kb.hold(GLFW_KEY_SPACE) && isGrounded())
 	PhysObj::addVelocity(collisionN * 0.1f);
     if(input.kb.hold(GLFW_KEY_LEFT_SHIFT) && !isGrounded())
-	acceleration.z -= 0.0005f;
-    setAcceleration(acceleration);
+	acceleration.z -= 0.0001f;
+    setAcceleration(acceleration);    
 }
 
 void Player::Draw(Render* render) {
@@ -67,13 +77,7 @@ void Player::Draw(Render* render) {
     glm::mat4 debug = modelMat *
 	glm::scale(glm::mat4(1.0f),
 		   glm::vec3(0.5));
-    render->DrawModel(model, glm::translate(
+    /*render->DrawModel(model, glm::translate(
 			      debug, 2.0f*collisionN),
-		      normalMat);
-    render->DrawModel(model, glm::translate(
-			      debug, 2.0f*collisionT),
-		      normalMat);
-    render->DrawModel(model, glm::translate(
-			      debug, 4.0f*glm::normalize(spinAxis)),
-		      normalMat);
+			      normalMat);*/
 }

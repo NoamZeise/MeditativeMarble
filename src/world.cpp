@@ -3,21 +3,26 @@
 #include "model_gen.h"
 #include "noise.h"
 #include <graphics/logger.h>
-#include <chrono>
-
-glm::vec3 surfaceFn(float x, float y) {
-    float i[] = {x*0.003f, y*0.003f, 0};
-    float i2[] = {x*0.0005f, y*0.0005f, 10};
-    return glm::vec3(x, y, (noise::simplex<3>(i) * 50 +
-			    noise::simplex<3>(i2)*200) - 300);
-}
-
+#include <game/random.h>
 
 World::World(Render *render, bool multithreadPools) {
+    this->loadTime = noise::createTemplateDefsForSimplex();
+    if(loadTime == 0)
+	LOG("load time zero");
     this->render = render;
     this->multithreadPools = multithreadPools;
     activePool = render->CreateResourcePool();
     inactivePool = render->CreateResourcePool();
+
+    float H1 = game::random::real() * 100;
+    float H2 = game::random::real() * 100;
+    surfaceFn = [H1, H2](float x, float y) {
+	float i[] = {x*0.003f, y*0.003f, H1};
+	float i2[] = {x*0.0005f, y*0.0005f, H2};
+	return glm::vec3(x, y, (noise::simplex<3>(i) * 50 +
+				noise::simplex<3>(i2)*200) - 300);
+    };
+    
     auto start = std::chrono::high_resolution_clock::now();
     createBuffered(glm::vec3(0));
     useBuffered(bufferedChunks[0]);
@@ -30,6 +35,8 @@ World::World(Render *render, bool multithreadPools) {
 World::~World() {
     if(threadActive)
 	loadingThread.join();
+    if(loadingChunk)
+	useChunkThread.join();
 }
 
 void World::loadChunksToGPU() {
@@ -56,12 +63,14 @@ bool World::checkCollision(glm::vec3 pos) {
     return pos.z < surfaceFn(pos.x, pos.y).z;
 }
 
-const glm::vec2 CHUNK_SIZE(3000, 3000);
+const glm::vec2 CHUNK_SIZE(2000, 2000);
 const float SUB_CHUNK_SIZE = 1000.0f;
-const float MAIN_CHUNK_RESOLUTION = 10.0f;
-const float SUB_CHUNK_RESOLUTION = 50.0f;
-const float LOD_OVERLAP = 15.0f;
-const float UV_DENSITY = 10.0f;
+const float MID_CHUNK_SIZE = 2000.0f;
+const float MAIN_CHUNK_RESOLUTION = 8.0f;
+const float SUB_CHUNK_RESOLUTION = 15.0f;
+const float MID_CHUNK_RESOLUTION = 14.0f;
+const float LOD_OVERLAP = 0.0f;
+const float UV_DENSITY = 5.0f;
 
 Buffered World::loadBufferedAtPoint(glm::vec3 pos) {
     Buffered b;
@@ -75,29 +84,29 @@ Buffered World::loadBufferedAtPoint(glm::vec3 pos) {
 	    {chunkRect.y, chunkRect.w + chunkRect.y, MAIN_CHUNK_RESOLUTION});
     b.main.model.meshes.back().diffuseTextures = { "terrian_tex.png"};
     b.main.rect = chunkRect;
-    for(int i = 0; i < 4; i++) {
+    /*for(int i = 0; i < 4; i++) {
 	glm::vec4 subChunkRect = chunkRect;
 	switch(i) {
 	case 0: //top left
-	    subChunkRect.x -= SUB_CHUNK_SIZE;
-	    subChunkRect.y -= SUB_CHUNK_SIZE;
-	    subChunkRect.z = CHUNK_SIZE.x + 2*SUB_CHUNK_SIZE;
+	    subChunkRect.x -= (SUB_CHUNK_SIZE + MID_CHUNK_SIZE);
+	    subChunkRect.y -= (SUB_CHUNK_SIZE + MID_CHUNK_SIZE);
+	    subChunkRect.z = CHUNK_SIZE.x + 2*SUB_CHUNK_SIZE + 2*MID_CHUNK_SIZE;
 	    subChunkRect.w = SUB_CHUNK_SIZE;
 	    break;
 	case 1:	//left
-	    subChunkRect.x -= SUB_CHUNK_SIZE;
+	    subChunkRect.x -= (SUB_CHUNK_SIZE + MID_CHUNK_SIZE);
 	    subChunkRect.z = SUB_CHUNK_SIZE;
-	    subChunkRect.w = CHUNK_SIZE.y;
+	    subChunkRect.w = (CHUNK_SIZE.y + MID_CHUNK_SIZE*2);
 	    break;
 	case 2: //right
-	    subChunkRect.x += CHUNK_SIZE.x;
+	    subChunkRect.x += CHUNK_SIZE.x + MID_CHUNK_SIZE;
 	    subChunkRect.z = SUB_CHUNK_SIZE;
-	    subChunkRect.w = CHUNK_SIZE.y;
+	    subChunkRect.w = CHUNK_SIZE.y + MID_CHUNK_SIZE*2;
 	    break;
 	case 3: //bottom left
-	    subChunkRect.x -= SUB_CHUNK_SIZE;
-	    subChunkRect.y += CHUNK_SIZE.y;
-	    subChunkRect.z = CHUNK_SIZE.x + 2*SUB_CHUNK_SIZE;
+	    subChunkRect.x -= (SUB_CHUNK_SIZE + MID_CHUNK_SIZE);
+	    subChunkRect.y +=( CHUNK_SIZE.y + MID_CHUNK_SIZE);
+	    subChunkRect.z = CHUNK_SIZE.x + 2*SUB_CHUNK_SIZE + 2*MID_CHUNK_SIZE;
 	    subChunkRect.w = SUB_CHUNK_SIZE;
 	    break;
 	}
@@ -106,15 +115,56 @@ Buffered World::loadBufferedAtPoint(glm::vec3 pos) {
 	subChunkRect.z += LOD_OVERLAP;
 	subChunkRect.w += LOD_OVERLAP;
 	b.lowLod[i].model = genSurface(
-		[](float a, float b){
+		[surfaceFn = this->surfaceFn](float a, float b){
 		    auto v = surfaceFn(a, b);
-		    v.z -= 4.0f;
+		    //v.z -= 4.0f;
 		    return v;},
 		true, UV_DENSITY,
 		{subChunkRect.x, subChunkRect.z + subChunkRect.x, SUB_CHUNK_RESOLUTION},
 		{subChunkRect.y, subChunkRect.w + subChunkRect.y, SUB_CHUNK_RESOLUTION});
 	b.lowLod[i].model.meshes.back().diffuseTextures = { "terrian_tex.png"};
 	b.lowLod[i].rect = subChunkRect;
+    }*/
+    for(int i = 0; i < 4; i++) {
+	glm::vec4 subChunkRect = chunkRect;
+	switch(i) {
+	case 0: //top left
+	    subChunkRect.x -= MID_CHUNK_SIZE;
+	    subChunkRect.y -= MID_CHUNK_SIZE;
+	    subChunkRect.z = CHUNK_SIZE.x + 2*MID_CHUNK_SIZE;
+	    subChunkRect.w = MID_CHUNK_SIZE;
+	    break;
+	case 1:	//left
+	    subChunkRect.x -= MID_CHUNK_SIZE;
+	    subChunkRect.z = MID_CHUNK_SIZE;
+	    subChunkRect.w = CHUNK_SIZE.y;
+	    break;
+	case 2: //right
+	    subChunkRect.x += CHUNK_SIZE.x;
+	    subChunkRect.z = MID_CHUNK_SIZE;
+	    subChunkRect.w = CHUNK_SIZE.y;
+	    break;
+	case 3: //bottom left
+	    subChunkRect.x -= MID_CHUNK_SIZE;
+	    subChunkRect.y += CHUNK_SIZE.y;
+	    subChunkRect.z = CHUNK_SIZE.x + 2*MID_CHUNK_SIZE;
+	    subChunkRect.w = MID_CHUNK_SIZE;
+	    break;
+	}
+	subChunkRect.x -= LOD_OVERLAP;
+	subChunkRect.y -= LOD_OVERLAP;
+	subChunkRect.z += LOD_OVERLAP;
+	subChunkRect.w += LOD_OVERLAP;
+	b.midLod[i].model = genSurface(
+		[surfaceFn = this->surfaceFn](float a, float b){
+		    auto v = surfaceFn(a, b);
+		    //v.z -= 4.0f;
+		    return v;},
+		true, UV_DENSITY,
+		{subChunkRect.x, subChunkRect.z + subChunkRect.x, MID_CHUNK_RESOLUTION},
+		{subChunkRect.y, subChunkRect.w + subChunkRect.y, MID_CHUNK_RESOLUTION});
+	b.midLod[i].model.meshes.back().diffuseTextures = { "terrian_tex.png"};
+	b.midLod[i].rect = subChunkRect;
     }
     b.loaded = true;
     return b;
@@ -131,7 +181,8 @@ void World::useBuffered(Buffered b) {
     mainRect = b.main.rect;
     chunks.push_back({inactivePool->model()->load(b.main.model)});
     for(int i = 0; i < 4; i++) {
-	chunks.push_back({inactivePool->model()->load(b.lowLod[i].model)});
+	//	chunks.push_back({inactivePool->model()->load(b.lowLod[i].model)});
+	chunks.push_back({inactivePool->model()->load(b.midLod[i].model)});
     }
 }
 
@@ -160,28 +211,28 @@ int World::bestChunk(glm::vec2 pos, float *bestReturn) {
     return bestI;
 }
 
-const float FUTURE_CHUNK_TIME = 2000.0f;
-const float NEW_CHUNK_CUTOFF = pow(500, 2);
+const float FUTURE_CHUNK_TIME = 3000.0f;
+const float NEW_CHUNK_CUTOFF = pow(250, 2);
 
 void World::Update(glm::vec3 playerPos, glm::vec3 playerVel) {
-    glm::vec3 pos = playerPos + playerVel*FUTURE_CHUNK_TIME;
+    glm::vec3 pos = playerPos + playerVel*FUTURE_CHUNK_TIME + playerVel*loadTime;
     float bestChunkDist = -1;
     usingCurrentBc.lock();
     int bestChunkI = bestChunk(pos, &bestChunkDist);
     if(threadActive) {
 	if(loadingFinished) {
 	    loadingThread.join();
+	    loadTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+		    std::chrono::high_resolution_clock::now() - startTime).count();
 	    threadActive = false;
 	} 
     } else {
 	if(bestChunkI == -1 || bestChunkDist > NEW_CHUNK_CUTOFF) {
 	    threadActive = true;
 	    loadingFinished = false;
+	    startTime = std::chrono::high_resolution_clock::now();
 	    loadingThread = std::thread([this, pos] {
-		auto start = std::chrono::high_resolution_clock::now();
 		createBuffered(pos);
-		loadTime = std::chrono::duration_cast<std::chrono::milliseconds>(
-			std::chrono::high_resolution_clock::now() - start).count();
 		loadingFinished = true;
 	    });
 	}

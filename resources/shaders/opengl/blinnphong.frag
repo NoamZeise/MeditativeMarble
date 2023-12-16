@@ -50,7 +50,7 @@ void main()
   }
   vec3 specular = lighting.specular.xyz * specularIntensity;
 
-  float fog = smoothstep(500, 1500, length(lighting.camPos.xyz - inFragPos));
+  float fog = smoothstep(1000, 2000, length(lighting.camPos.xyz - inFragPos));
   vec4 result = vec4(ambient + diffuse + specular, 1.0) * objectColour;
   outColour = mix(result, vec4(result.rgb, 0), fog);
 }

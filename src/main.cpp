@@ -18,6 +18,9 @@ int main(int argc, char** argv) {
     state.conf.multisampling = true;
     state.conf.sample_shading = true;
     state.conf.depth_range_3D[1] = 10000.0f;
+    state.conf.clear_colour[0] = 0/255.0f;
+    state.conf.clear_colour[1] = 198/255.0f;
+    state.conf.clear_colour[2] = 224/255.0f;
     
     if(argc > 1) {
 	if(std::string(argv[1]) == "opengl")
@@ -26,11 +29,10 @@ int main(int argc, char** argv) {
 
     Manager manager(state);
     ResourcePool* pool = manager.render->pool();
-    
-    Resource::Texture testImage = pool->tex()->load("textures/test.png");
-    debug::setFont(pool->font()->load("textures/Roboto-Black.ttf"));
 
-    Player player(pool->model()->load("models/sphere.obj"));
+    ModelInfo::Model sphere = pool->model()->loadModelData("models/sphere.obj");
+    sphere.meshes[0].diffuseTextures.push_back("player.png");
+    Player player(pool->model()->load(sphere));
     World world(manager.render, manager.backend() != RenderFramework::OpenGL);
     PhysicsManager pm(&world);
     pm.addPhysObj(&player);
@@ -44,19 +46,18 @@ int main(int argc, char** argv) {
 
     ThirdPersonCam cam;
     float camRad = INITAL_CAM_RAD;
-    std::string drawStats, updateStats;
+    //std::string drawStats, updateStats;
     while(!glfwWindowShouldClose(manager.window)) {
 	// Update
-	auto start = std::chrono::high_resolution_clock::now();
+	//auto start = std::chrono::high_resolution_clock::now();
 	manager.update();
 	if(manager.input.kb.press(GLFW_KEY_ESCAPE))
 	    glfwSetWindowShouldClose(manager.window, GLFW_TRUE);
 
 	player.Update(manager.input, manager.timer, cam.getTargetForward(), cam.getTargetLeft());
 	world.Update(player.PhysObj::getPos(), player.getVel());
-	if(world.recreationRequired()) {
+	if(world.recreationRequired())
 	    manager.render->UseLoadedResources();
-	}
 	pm.Update(manager.timer.dt());
 
 	cam.control(manager.input, manager.timer.dt());
@@ -67,22 +68,20 @@ int main(int argc, char** argv) {
 	
 	manager.render->set3DViewMat(cam.getView(), cam.getPos());
 
-	updateStats = std::to_string(
+	/*updateStats = std::to_string(
 		std::chrono::duration_cast<std::chrono::microseconds>(
 			std::chrono::high_resolution_clock::now() - start).count() / 1000.0)
-	    + " ms";	
+			+ " ms";	*/
 	if(manager.winActive()) {
 	    player.Draw(manager.render);
 	    world.Draw(manager.render);
-	    debug::draw(manager.render, 30, "update", updateStats);
-	    debug::draw(manager.render, 50, "draw", drawStats);
-	    debug::draw(manager.render, 70, "pos", player.PhysObj::getPos());
-	    debug::draw(manager.render, 90, "vel", player.PhysObj::getVel());
+	    //	    debug::draw(manager.render, 30, "update", updateStats);
+	    //debug::draw(manager.render, 50, "draw", drawStats);
 	    std::atomic<bool> drawSubmitted;
 	    manager.render->EndDraw(drawSubmitted);
-	    drawStats = std::to_string(
+	    /*drawStats = std::to_string(
 		    1.0 / std::chrono::duration_cast<std::chrono::microseconds>(
-			    std::chrono::high_resolution_clock::now() - start).count() * 1000000.0) + " fps";
+		    std::chrono::high_resolution_clock::now() - start).count() * 1000000.0) + " fps";*/
 	}
     }
 }

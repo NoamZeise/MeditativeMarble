@@ -129,14 +129,14 @@ namespace noise {
   /// where it is defined. (ie here)
   /// This function never needs to be called, its marked volatile
   /// so the compiler hopefully doesn't remove it
-  volatile void createTemplateDefsForSimplex() {
+  volatile float createTemplateDefsForSimplex() {
       /// define a few simplex functions
       float i[] = {0, 0, 0, 0, 0, 0};
-      simplex<2>(i);
-      simplex<3>(i);
-      simplex<4>(i);
-      simplex<5>(i);
-      simplex<6>(i);
+      return simplex<2>(i) +
+	  simplex<3>(i) +
+	  simplex<4>(i) +
+	  simplex<5>(i) + 
+	  simplex<6>(i);
   }
 
 };

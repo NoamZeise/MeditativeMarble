@@ -7,6 +7,8 @@
 #include <vector>
 #include <thread>
 #include <mutex>
+#include <functional>
+#include <chrono>
 
 struct Chunk {
     Resource::Model model;
@@ -21,6 +23,7 @@ struct BufferedChunk {
 
 struct Buffered {
     BufferedChunk main;
+    BufferedChunk midLod[4];
     BufferedChunk lowLod[4];
     bool loaded = false;
 };
@@ -67,8 +70,11 @@ class World {
     std::thread useChunkThread;
     std::atomic<bool> useChunkLoaded = false;
     float loadTime = 0.0f;
-    float loadTimer = 0.0f;
+    
     bool multithreadPools;
+    std::function<glm::vec3(float, float)> surfaceFn;
+
+    std::chrono::time_point<std::chrono::system_clock> startTime;
 };
 
 #endif /* WORLD_H */

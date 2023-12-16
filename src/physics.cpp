@@ -23,13 +23,11 @@ void Sphere::worldCollision(World *world) {
     grounded = false;
     glm::vec3 np = world->nearestPoint(pos);
     glm::vec3 dir = pos - np;
-    if(dir != glm::vec3(0)) {
+    bool insideShape = world->checkCollision(pos);
+    if(insideShape || glm::dot(dir, dir) < radius*radius) {
 	collisionN = glm::normalize(dir);
 	glm::vec3 side = glm::cross(velocity, -collisionN);
 	collisionT = glm::cross(-collisionN, side);
-    }
-    bool insideShape = world->checkCollision(pos);
-    if(insideShape || glm::dot(dir, dir) < radius*radius) {
 	grounded = true;
 	if(dir != glm::vec3(0)) {
 	    collisionN = glm::normalize(dir);
@@ -45,7 +43,6 @@ void Sphere::worldCollision(World *world) {
 	velocity += bounce*bounceCoeff;
 	
 	//friction
-	glm::vec3 side = glm::cross(velocity, -collisionN);
 	if(side != glm::vec3(0)) {
 	    side = glm::normalize(side);
 	}
@@ -72,7 +69,7 @@ void Sphere::Update(long long dt) {
 	    spinDir *= 1 - (0.1f*dt)*diff;
 	}
     } else {
-	spinAxis *= 1 - (0.01f*dt);
+	spinAxis *= 1 - (0.001f*dt);
     }
     PhysObj::Update(dt);
 }

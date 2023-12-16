@@ -8,5 +8,6 @@ namespace noise {
   /// defined for: 2, 3, 4, 5, 6
   template <unsigned int dim>
   float simplex(float *input);
+  volatile float createTemplateDefsForSimplex();
 };
 #endif /* NOISE_H */
