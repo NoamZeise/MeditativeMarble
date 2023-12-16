@@ -6,11 +6,11 @@
 
 #include <vector>
 #include <thread>
+#include <mutex>
 
 struct Chunk {
     Resource::Model model;
     bool inGpu = false;
-    bool inInactive = false;
     Resource::Pool pool;
 };
 
@@ -27,7 +27,7 @@ struct Buffered {
 
 class World {
  public:
-    World(Render* render);
+    World(Render* render, bool multithreadPools);
     ~World();
     bool checkCollision(glm::vec3 pos);
     glm::vec3 nearestPoint(glm::vec3 pos);
@@ -45,6 +45,7 @@ class World {
     void useBuffered(Buffered b);
     void loadChunksToGPU();
     void switchPools();
+    int bestChunk(glm::vec2 pos, float *bestReturn);
 
     bool recreate = false;
     ResourcePool* activePool;
@@ -56,6 +57,7 @@ class World {
     static const int BC_SIZE = 10;
     Buffered bufferedChunks[BC_SIZE];
     int currentBc = 0;
+    std::mutex usingCurrentBc;
 
     bool threadActive = false;
     std::atomic<bool> loadingFinished;
@@ -66,6 +68,7 @@ class World {
     std::atomic<bool> useChunkLoaded = false;
     float loadTime = 0.0f;
     float loadTimer = 0.0f;
+    bool multithreadPools;
 };
 
 #endif /* WORLD_H */

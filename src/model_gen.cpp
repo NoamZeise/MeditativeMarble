@@ -55,9 +55,11 @@ ModelInfo::Model genSurface(
 	SurfaceParam var1, SurfaceParam var2) {
     ModelInfo::Model model;
     ModelInfo::Mesh m;
+
+    int width = 0;
+    for(float y = var2.start; y < var2.end; y+=var2.step, width++);
     
     int i = 0;
-    int width = glm::ceil((var2.end - var2.start) / var2.step);
     for(float x = var1.start; x < var1.end; x+=var1.step, i++) {
 	int j = 0;
 	for(float y = var2.start; y < var2.end; y+=var2.step, j++) {

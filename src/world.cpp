@@ -13,8 +13,9 @@ glm::vec3 surfaceFn(float x, float y) {
 }
 
 
-World::World(Render *render) {
+World::World(Render *render, bool multithreadPools) {
     this->render = render;
+    this->multithreadPools = multithreadPools;
     activePool = render->CreateResourcePool();
     inactivePool = render->CreateResourcePool();
     auto start = std::chrono::high_resolution_clock::now();
@@ -33,17 +34,6 @@ World::~World() {
 
 void World::loadChunksToGPU() {
     render->LoadResourcesToGPU(inactivePool);
-    for(int i = 0; i < chunks.size(); i++) {
-	if(!chunks[i].inGpu) {
-	    chunks[i].inGpu = true;
-	    chunks[i].pool = inactivePool->id();
-	}
-	else if(!chunks[i].inInactive) {
-	    chunks[i].inInactive = true;
-	}
-	else
-	    chunks.erase(chunks.begin() + i--);
-    }
 }
 
 void World::switchPools() {
@@ -52,14 +42,22 @@ void World::switchPools() {
     ResourcePool* temp = activePool;
     activePool = inactivePool;
     inactivePool = temp;
+
+    for(int i = 0; i < chunks.size(); i++) {
+	if(!chunks[i].inGpu) {
+	    chunks[i].inGpu = true;
+	    chunks[i].pool = activePool->id();
+	} else
+	    chunks.erase(chunks.begin() + i--);
+    }
 }
 
 bool World::checkCollision(glm::vec3 pos) {
     return pos.z < surfaceFn(pos.x, pos.y).z;
 }
 
-const glm::vec2 CHUNK_SIZE(1500, 1500);
-const float SUB_CHUNK_SIZE = 2000.0f;
+const glm::vec2 CHUNK_SIZE(3000, 3000);
+const float SUB_CHUNK_SIZE = 1000.0f;
 const float MAIN_CHUNK_RESOLUTION = 10.0f;
 const float SUB_CHUNK_RESOLUTION = 50.0f;
 const float LOD_OVERLAP = 15.0f;
@@ -124,7 +122,9 @@ Buffered World::loadBufferedAtPoint(glm::vec3 pos) {
 
 void World::createBuffered(glm::vec3 pos) {
     bufferedChunks[currentBc] = loadBufferedAtPoint(pos);
+    usingCurrentBc.lock();
     currentBc = (currentBc + 1) % BC_SIZE;
+    usingCurrentBc.unlock();
 }
 
 void World::useBuffered(Buffered b) {
@@ -135,65 +135,84 @@ void World::useBuffered(Buffered b) {
     }
 }
 
+int World::bestChunk(glm::vec2 pos, float *bestReturn) {
+    int bestI = -1;
+    float best = -1;
+    for(int i = 0; i < BC_SIZE; i++) {
+	if(i == currentBc)
+	    continue;
+	if(bufferedChunks[i].loaded) {
+	    glm::vec2 diff =
+		glm::vec2(pos.x, pos.y) -
+		glm::vec2(bufferedChunks[i].main.rect.x +
+			  bufferedChunks[i].main.rect.z/2,
+			  bufferedChunks[i].main.rect.y +
+			  bufferedChunks[i].main.rect.w/2);
+	    float d = glm::dot(diff, diff);
+	    if(best == -1 || d < best) {
+		best = d;
+		bestI = i;
+	    }
+	}
+    }
+    if(bestReturn != nullptr)
+	*bestReturn = best;
+    return bestI;
+}
+
+const float FUTURE_CHUNK_TIME = 2000.0f;
+const float NEW_CHUNK_CUTOFF = pow(500, 2);
+
 void World::Update(glm::vec3 playerPos, glm::vec3 playerVel) {
+    glm::vec3 pos = playerPos + playerVel*FUTURE_CHUNK_TIME;
+    float bestChunkDist = -1;
+    usingCurrentBc.lock();
+    int bestChunkI = bestChunk(pos, &bestChunkDist);
     if(threadActive) {
 	if(loadingFinished) {
 	    loadingThread.join();
 	    threadActive = false;
 	} 
+    } else {
+	if(bestChunkI == -1 || bestChunkDist > NEW_CHUNK_CUTOFF) {
+	    threadActive = true;
+	    loadingFinished = false;
+	    loadingThread = std::thread([this, pos] {
+		auto start = std::chrono::high_resolution_clock::now();
+		createBuffered(pos);
+		loadTime = std::chrono::duration_cast<std::chrono::milliseconds>(
+			std::chrono::high_resolution_clock::now() - start).count();
+		loadingFinished = true;
+	    });
+	}
     }
-    
-    if(!threadActive) {
-	threadActive = true;
-	loadingFinished = false;
-	loadingThread = std::thread([this, pos = playerPos + playerVel*loadTime] {
-	    auto start = std::chrono::high_resolution_clock::now();
-	    createBuffered(pos);
-	    loadTime = std::chrono::duration_cast<std::chrono::milliseconds>(
-		    std::chrono::high_resolution_clock::now() - start).count();
-	    loadingFinished = true;
-	});
-    }
-    if(loadingChunk) {
+    if(loadingChunk && !recreate) {
 	if(useChunkLoaded) {
 	    useChunkThread.join();
+	    useChunkLoaded = false;
+	    if(!multithreadPools)
+		loadChunksToGPU();
 	    switchPools();
 	    loadingChunk = false;
 	    recreate = true;
 	}
-    }
-    else {
+    } else if(!recreate){
 	if(playerPos.x < mainRect.x + CHUNK_SIZE.x/4 ||
 	   playerPos.y < mainRect.y + CHUNK_SIZE.y/4 ||
 	   playerPos.x > mainRect.x + mainRect.z - CHUNK_SIZE.x/4 ||
 	   playerPos.y > mainRect.y + mainRect.w - CHUNK_SIZE.y/4) {
-	    int bestI = -1;
-	    float best = -1;
-	    for(int i = 0; i < BC_SIZE; i++) {
-		if(bufferedChunks[i].loaded) {
-		    glm::vec2 diff =
-			glm::vec2(playerPos.x, playerPos.y) -
-			glm::vec2(bufferedChunks[i].main.rect.x +
-				  bufferedChunks[i].main.rect.z/2,
-				  bufferedChunks[i].main.rect.y +
-				  bufferedChunks[i].main.rect.w/2);
-		    float d = glm::dot(diff, diff);
-		    if(best == -1 || d < best) {
-			best = d;
-			bestI = i;
-		    }
-		}
-	    }
-	    if(bestI != -1) {
+	    if(bestChunkI != -1) {
 		loadingChunk = true;
-		useChunkThread = std::thread([this, b = bufferedChunks[bestI]]{
+		useChunkThread = std::thread([this, b = bufferedChunks[bestChunkI]]{
 		    useBuffered(b);
-		    loadChunksToGPU();
+		    if(multithreadPools)
+			loadChunksToGPU();
 		    useChunkLoaded = true;
 		});
 	    }
 	}
     }
+    usingCurrentBc.unlock();
 }
 
 void World::Draw(Render* render) {

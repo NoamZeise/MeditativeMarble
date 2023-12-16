@@ -65,6 +65,5 @@ void main()
 
     float fog = smoothstep(500, 1200, length(lighting.camPos.xyz - inFragPos));
     vec4 result = vec4((ambient + diffuse + specular), 1.0)*objectColour;
-    outColour =
-      mix(result, vec4(result.rgb, 0), fog);
+    outColour = mix(result, vec4(result.rgb, 0), fog);
 }

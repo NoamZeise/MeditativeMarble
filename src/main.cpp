@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
     debug::setFont(pool->font()->load("textures/Roboto-Black.ttf"));
 
     Player player(pool->model()->load("models/sphere.obj"));
-    World world(manager.render);
+    World world(manager.render, manager.backend() != RenderFramework::OpenGL);
     PhysicsManager pm(&world);
     pm.addPhysObj(&player);
     
@@ -54,8 +54,9 @@ int main(int argc, char** argv) {
 
 	player.Update(manager.input, manager.timer, cam.getTargetForward(), cam.getTargetLeft());
 	world.Update(player.PhysObj::getPos(), player.getVel());
-	if(world.recreationRequired())
+	if(world.recreationRequired()) {
 	    manager.render->UseLoadedResources();
+	}
 	pm.Update(manager.timer.dt());
 
 	cam.control(manager.input, manager.timer.dt());
