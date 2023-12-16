@@ -12,7 +12,7 @@
 int main(int argc, char** argv) {
     ManagerState state;
     state.cursor = cursorState::disabled;
-    state.windowTitle = "bmjam";
+    state.windowTitle = "Meditative Marble";
     state.windowWidth = 800;
     state.windowHeight = 600;
     state.conf.multisampling = true;
@@ -53,6 +53,8 @@ int main(int argc, char** argv) {
 	manager.update();
 	if(manager.input.kb.press(GLFW_KEY_ESCAPE))
 	    glfwSetWindowShouldClose(manager.window, GLFW_TRUE);
+	if(manager.input.kb.press(GLFW_KEY_F))
+	    manager.toggleFullscreen();
 
 	player.Update(manager.input, manager.timer, cam.getTargetForward(), cam.getTargetLeft());
 	world.Update(player.PhysObj::getPos(), player.getVel());
