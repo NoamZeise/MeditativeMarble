@@ -34,7 +34,6 @@ int quadvi(int i, int j, int j_width, int vert) {
 void addNormal(glm::vec3 &prevNorm, glm::vec3 newNorm) {
     if(prevNorm != glm::vec3(0)) {
 	prevNorm += newNorm;
-	newNorm/=2;
     } else {
 	prevNorm = newNorm;
     }
