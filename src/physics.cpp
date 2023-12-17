@@ -10,15 +10,6 @@ void PhysObj::addAcceleration(glm::vec3 acceleration) {
 
 void PhysObj::addVelocity(glm::vec3 velocity) { this->velocity += velocity; }
 
-
-#include <graphics/logger.h>
-
-void print_vec3(glm::vec3 v, std::string name) {
-    LOG(name << ".x: " << v.x << "  " <<
-	name << ".y: " << v.y << "  " <<
-	name << ".z: " << v.z);
-}
-
 void Sphere::worldCollision(World *world) {
     grounded = false;
     glm::vec3 np = world->nearestPoint(pos);

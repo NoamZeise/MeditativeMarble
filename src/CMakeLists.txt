@@ -3,7 +3,6 @@ add_executable(bmjam
   third_person_cam.cpp
   model_gen.cpp
   noise.cpp
-  debug.cpp
   player.cpp
   world.cpp
   physics.cpp)

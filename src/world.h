@@ -23,7 +23,6 @@ struct BufferedChunk {
 
 struct Buffered {
     BufferedChunk main;
-    BufferedChunk midLod[4];
     BufferedChunk lowLod[4];
     bool loaded = false;
 };

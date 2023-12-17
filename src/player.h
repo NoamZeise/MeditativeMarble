@@ -17,7 +17,7 @@ class Obj3D {
     void setRot(glm::vec3 axis, float angle);
     glm::vec3 getScale() { return scale; }
     void setColour(glm::vec4 colour);
-protected: //private:
+private:
     void updateMat();
     glm::vec3 modelPos = glm::vec3(0, 0, 0);
     glm::vec3 scale = glm::vec3(1, 1, 1);
@@ -36,7 +36,6 @@ class Player : public Obj3D, public Sphere {
     Player(Resource::Model model);
     void Update(Input &input, Timer &timer,
 		glm::vec3 forward, glm::vec3 left);
-    void Draw(Render* render) override;
  private:
     float speed = 0.00003;
     float spinTime = 0;

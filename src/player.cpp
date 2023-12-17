@@ -71,13 +71,3 @@ void Player::Update(Input &input, Timer &timer,
 	acceleration.z -= 0.0001f;
     setAcceleration(acceleration);    
 }
-
-void Player::Draw(Render* render) {
-    Obj3D::Draw(render);
-    glm::mat4 debug = modelMat *
-	glm::scale(glm::mat4(1.0f),
-		   glm::vec3(0.5));
-    /*render->DrawModel(model, glm::translate(
-			      debug, 2.0f*collisionN),
-			      normalMat);*/
-}

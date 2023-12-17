@@ -7,7 +7,6 @@
 #include "third_person_cam.h"
 #include "player.h"
 #include "world.h"
-#include "debug.h"
 
 int main(int argc, char** argv) {
     ManagerState state;
@@ -46,10 +45,7 @@ int main(int argc, char** argv) {
 
     ThirdPersonCam cam;
     float camRad = INITAL_CAM_RAD;
-    //std::string drawStats, updateStats;
     while(!glfwWindowShouldClose(manager.window)) {
-	// Update
-	//auto start = std::chrono::high_resolution_clock::now();
 	manager.update();
 	if(manager.input.kb.press(GLFW_KEY_ESCAPE))
 	    glfwSetWindowShouldClose(manager.window, GLFW_TRUE);
@@ -62,28 +58,16 @@ int main(int argc, char** argv) {
 	    manager.render->UseLoadedResources();
 	pm.Update(manager.timer.dt());
 
-	cam.control(manager.input, manager.timer.dt());
 	cam.setPos(pm.fixCamPos(cam.getLocalPos(), &camRad, player.PhysObj::getPos(),
 				      player.PhysObj::getVel()));
-	//manager.fov = 45.0f + (camRad - INITAL_CAM_RAD)/50.0f;
 	cam.setTarget(player.Obj3D::getPos(), camRad);
 	
 	manager.render->set3DViewMat(cam.getView(), cam.getPos());
-
-	/*updateStats = std::to_string(
-		std::chrono::duration_cast<std::chrono::microseconds>(
-			std::chrono::high_resolution_clock::now() - start).count() / 1000.0)
-			+ " ms";	*/
 	if(manager.winActive()) {
 	    player.Draw(manager.render);
 	    world.Draw(manager.render);
-	    //	    debug::draw(manager.render, 30, "update", updateStats);
-	    //debug::draw(manager.render, 50, "draw", drawStats);
 	    std::atomic<bool> drawSubmitted;
 	    manager.render->EndDraw(drawSubmitted);
-	    /*drawStats = std::to_string(
-		    1.0 / std::chrono::duration_cast<std::chrono::microseconds>(
-		    std::chrono::high_resolution_clock::now() - start).count() * 1000000.0) + " fps";*/
 	}
     }
 }

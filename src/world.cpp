@@ -6,6 +6,9 @@
 #include <game/random.h>
 
 World::World(Render *render, bool multithreadPools) {
+    // to stop the compiler from getting rid of this function
+    // otherwise we dont get the defs for the simplex noise
+    // templates
     this->loadTime = noise::createTemplateDefsForSimplex();
     if(loadTime == 0)
 	LOG("load time zero");
@@ -84,47 +87,6 @@ Buffered World::loadBufferedAtPoint(glm::vec3 pos) {
 	    {chunkRect.y, chunkRect.w + chunkRect.y, MAIN_CHUNK_RESOLUTION});
     b.main.model.meshes.back().diffuseTextures = { "terrian_tex.png"};
     b.main.rect = chunkRect;
-    /*for(int i = 0; i < 4; i++) {
-	glm::vec4 subChunkRect = chunkRect;
-	switch(i) {
-	case 0: //top left
-	    subChunkRect.x -= (SUB_CHUNK_SIZE + MID_CHUNK_SIZE);
-	    subChunkRect.y -= (SUB_CHUNK_SIZE + MID_CHUNK_SIZE);
-	    subChunkRect.z = CHUNK_SIZE.x + 2*SUB_CHUNK_SIZE + 2*MID_CHUNK_SIZE;
-	    subChunkRect.w = SUB_CHUNK_SIZE;
-	    break;
-	case 1:	//left
-	    subChunkRect.x -= (SUB_CHUNK_SIZE + MID_CHUNK_SIZE);
-	    subChunkRect.z = SUB_CHUNK_SIZE;
-	    subChunkRect.w = (CHUNK_SIZE.y + MID_CHUNK_SIZE*2);
-	    break;
-	case 2: //right
-	    subChunkRect.x += CHUNK_SIZE.x + MID_CHUNK_SIZE;
-	    subChunkRect.z = SUB_CHUNK_SIZE;
-	    subChunkRect.w = CHUNK_SIZE.y + MID_CHUNK_SIZE*2;
-	    break;
-	case 3: //bottom left
-	    subChunkRect.x -= (SUB_CHUNK_SIZE + MID_CHUNK_SIZE);
-	    subChunkRect.y +=( CHUNK_SIZE.y + MID_CHUNK_SIZE);
-	    subChunkRect.z = CHUNK_SIZE.x + 2*SUB_CHUNK_SIZE + 2*MID_CHUNK_SIZE;
-	    subChunkRect.w = SUB_CHUNK_SIZE;
-	    break;
-	}
-	subChunkRect.x -= LOD_OVERLAP;
-	subChunkRect.y -= LOD_OVERLAP;
-	subChunkRect.z += LOD_OVERLAP;
-	subChunkRect.w += LOD_OVERLAP;
-	b.lowLod[i].model = genSurface(
-		[surfaceFn = this->surfaceFn](float a, float b){
-		    auto v = surfaceFn(a, b);
-		    //v.z -= 4.0f;
-		    return v;},
-		true, UV_DENSITY,
-		{subChunkRect.x, subChunkRect.z + subChunkRect.x, SUB_CHUNK_RESOLUTION},
-		{subChunkRect.y, subChunkRect.w + subChunkRect.y, SUB_CHUNK_RESOLUTION});
-	b.lowLod[i].model.meshes.back().diffuseTextures = { "terrian_tex.png"};
-	b.lowLod[i].rect = subChunkRect;
-    }*/
     for(int i = 0; i < 4; i++) {
 	glm::vec4 subChunkRect = chunkRect;
 	switch(i) {
@@ -155,16 +117,11 @@ Buffered World::loadBufferedAtPoint(glm::vec3 pos) {
 	subChunkRect.y -= LOD_OVERLAP;
 	subChunkRect.z += LOD_OVERLAP;
 	subChunkRect.w += LOD_OVERLAP;
-	b.midLod[i].model = genSurface(
-		[surfaceFn = this->surfaceFn](float a, float b){
-		    auto v = surfaceFn(a, b);
-		    //v.z -= 4.0f;
-		    return v;},
-		true, UV_DENSITY,
+	b.lowLod[i].model = genSurface(surfaceFn, true, UV_DENSITY,
 		{subChunkRect.x, subChunkRect.z + subChunkRect.x, MID_CHUNK_RESOLUTION},
 		{subChunkRect.y, subChunkRect.w + subChunkRect.y, MID_CHUNK_RESOLUTION});
-	b.midLod[i].model.meshes.back().diffuseTextures = { "terrian_tex.png"};
-	b.midLod[i].rect = subChunkRect;
+	b.lowLod[i].model.meshes.back().diffuseTextures = { "terrian_tex.png"};
+	b.lowLod[i].rect = subChunkRect;
     }
     b.loaded = true;
     return b;
@@ -181,8 +138,7 @@ void World::useBuffered(Buffered b) {
     mainRect = b.main.rect;
     chunks.push_back({inactivePool->model()->load(b.main.model)});
     for(int i = 0; i < 4; i++) {
-	//	chunks.push_back({inactivePool->model()->load(b.lowLod[i].model)});
-	chunks.push_back({inactivePool->model()->load(b.midLod[i].model)});
+	chunks.push_back({inactivePool->model()->load(b.lowLod[i].model)});
     }
 }
 
