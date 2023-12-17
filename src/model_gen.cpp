@@ -3,10 +3,6 @@
 #include <glm/glm.hpp>
 #include <functional>
 
-#include "noise.h"
-
-const float PI = 3.141592653589;
-
 int quadvi(int i, int j, int j_width, int vert) {
     // 6 inds per quad - v3, v2, v1, v2, v3, v4
     switch(vert) {
